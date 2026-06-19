@@ -234,3 +234,14 @@ public sealed record PropertyPlanDetailsDto(
     IReadOnlyList<PaymentDto> RecentPayments,
     IReadOnlyList<BookingDto> UpcomingBookings,
     IReadOnlyList<CleaningReportSummaryDto> RecentReports);
+
+/// <summary>
+/// Full detail view for a single property: info, the subscription/plan attached to it,
+/// every invoice tied to its plan, every cleaning event ever booked, and every report.
+/// </summary>
+public sealed record PropertyDetailDto(
+    PropertySummaryDto Property,
+    SubscriptionDto? Plan,
+    IReadOnlyList<PaymentDto> Invoices,
+    IReadOnlyList<BookingDto> Bookings,
+    IReadOnlyList<CleaningReportSummaryDto> Reports);

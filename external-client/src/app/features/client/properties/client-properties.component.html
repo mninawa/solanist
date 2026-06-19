@@ -306,10 +306,10 @@
               </div>
               <div class="property-body">
                 <div class="property-body-header">
-                  <div>
+                  <a [routerLink]="['/client/properties', prop.id]" class="property-name-link">
                     <h3>{{ prop.address }}</h3>
                     <p class="property-location">{{ prop.city }}, {{ prop.postcode }}</p>
-                  </div>
+                  </a>
                   @if (canDeleteProperty()) {
                     <button
                       type="button"
@@ -474,13 +474,13 @@
                   @for (prop of properties(); track prop.id) {
                     <tr>
                       <td data-label="Property">
-                        <div class="table-property">
+                        <a [routerLink]="['/client/properties', prop.id]" class="table-property table-property-link">
                           <img [src]="displayImage(prop)" alt="" class="table-thumb" (error)="onImageError(prop.id)" />
                           <div>
                             <strong>{{ prop.address }}</strong>
                             <span>{{ prop.city }}</span>
                           </div>
-                        </div>
+                        </a>
                       </td>
                       <td data-label="Plan">{{ prop.planName ?? '—' }}</td>
                       <td data-label="Frequency">{{ prop.planFrequency || (prop.planName ? '—' : 'No plan') }}</td>

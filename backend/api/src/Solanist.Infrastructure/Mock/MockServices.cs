@@ -105,6 +105,31 @@ public sealed class MockClientService : IClientService
         return Task.FromResult<PropertyPlanDetailsDto?>(plan);
     }
 
+    public Task<PropertyDetailDto?> GetPropertyDetailAsync(string propertyId, CancellationToken ct = default)
+    {
+        var property = _properties.FirstOrDefault(p => p.Id == propertyId);
+        if (property is null) return Task.FromResult<PropertyDetailDto?>(null);
+
+        var bookings = _bookings
+            .Where(b => b.PropertyId == propertyId)
+            .OrderByDescending(b => b.Date)
+            .ToList();
+
+        var reports = _reportAvailable
+            ? MockData.Reports.Select(MockData.ToSummary).ToList()
+            : new List<CleaningReportSummaryDto>();
+
+        var planName = property.PlanName;
+        var invoices = MockData.Payments
+            .Where(p => string.IsNullOrWhiteSpace(planName)
+                || string.Equals(p.Description, planName, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(p => p.Date)
+            .ToList();
+
+        var detail = new PropertyDetailDto(property, MockData.Subscription, invoices, bookings, reports);
+        return Task.FromResult<PropertyDetailDto?>(detail);
+    }
+
     public Task<PropertySummaryDto> AddPropertyAsync(CreatePropertyRequest request, CancellationToken ct = default)
     {
         var property = new PropertySummaryDto(

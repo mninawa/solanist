@@ -529,6 +529,32 @@
   }
 }
 
+.property-name-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+  transition: color 0.15s ease;
+
+  h3 {
+    transition: color 0.15s ease;
+  }
+
+  &:hover h3 {
+    color: var(--color-accent);
+  }
+}
+
+.table-property-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.15s ease;
+
+  &:hover strong {
+    color: var(--color-accent);
+  }
+}
+
 .property-body-header {
   display: flex;
   align-items: flex-start;

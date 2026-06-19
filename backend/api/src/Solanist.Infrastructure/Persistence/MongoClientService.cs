@@ -282,6 +282,51 @@ public sealed class MongoClientService : IClientService
             recentReports);
     }
 
+    public async Task<PropertyDetailDto?> GetPropertyDetailAsync(string propertyId, CancellationToken ct = default)
+    {
+        var property = await Properties.Find(p => p.Id == propertyId && p.CustomerId == CustomerId)
+            .FirstOrDefaultAsync(ct);
+        if (property is null) return null;
+
+        var properties = new List<PropertyDocument> { property };
+        await EnrichPlanFieldsAsync(properties, ct);
+
+        var subscription = await Subscriptions.Find(s => s.CustomerId == CustomerId).FirstOrDefaultAsync(ct);
+        var bookings = await GetBookingDocsAsync(ct);
+        var reports = await GetReportDocsAsync(ct);
+        var payments = await GetPaymentDocsAsync(ct);
+
+        var propertyBookings = bookings
+            .Where(b => string.Equals(b.PropertyId, propertyId, StringComparison.Ordinal))
+            .OrderByDescending(b => b.Date)
+            .Select(MongoMappers.ToBookingDto)
+            .ToList();
+
+        var propertyReports = reports
+            .Where(r => string.Equals(r.PropertyId, propertyId, StringComparison.Ordinal))
+            .OrderByDescending(r => r.CompletedAt)
+            .Select(MongoMappers.ToReportSummary)
+            .ToList();
+
+        // Payments are stored at customer level, not per-property. Filter to invoices that
+        // match this property's plan name (description), so multi-property accounts only see
+        // the invoices that fund this specific subscription.
+        var planName = property.PlanName;
+        var propertyInvoices = payments
+            .Where(p => string.IsNullOrWhiteSpace(planName)
+                || string.Equals(p.Description, planName, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(p => p.Date)
+            .Select(MongoMappers.ToPaymentDto)
+            .ToList();
+
+        return new PropertyDetailDto(
+            MongoMappers.ToPropertyDto(property),
+            subscription is null ? null : MongoMappers.ToSubscriptionDto(subscription),
+            propertyInvoices,
+            propertyBookings,
+            propertyReports);
+    }
+
     public async Task<PropertySummaryDto> AddPropertyAsync(CreatePropertyRequest request, CancellationToken ct = default)
     {
         var existing = await GetPropertyDocsAsync(ct);

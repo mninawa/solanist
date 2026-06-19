@@ -156,7 +156,7 @@
                       }
                     </p>
                     <div class="pf-actions">
-                      <a routerLink="/client/properties" class="btn btn-outline btn-sm">View property</a>
+                      <a [routerLink]="['/client/properties', prop.id]" class="btn btn-outline btn-sm">View property</a>
                       @if (needsPlan(prop)) {
                         <button type="button" class="btn btn-primary btn-sm" (click)="openAssignPlan(prop)">Assign plan</button>
                       } @else {
@@ -209,7 +209,7 @@
                     }
                   </div>
                   <div class="pf-row-actions">
-                    <a routerLink="/client/properties" class="btn btn-outline btn-sm">View</a>
+                    <a [routerLink]="['/client/properties', prop.id]" class="btn btn-outline btn-sm">View</a>
                     @if (needsPlan(prop)) {
                       <button type="button" class="btn btn-primary btn-sm" (click)="openAssignPlan(prop)">Assign plan</button>
                     } @else {

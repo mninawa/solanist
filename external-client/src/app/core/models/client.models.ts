@@ -207,6 +207,14 @@ export interface ChangePasswordResult {
   errorCode?: string | null;
 }
 
+export interface PropertyDetail {
+  property: PropertySummary;
+  plan: Subscription | null;
+  invoices: Payment[];
+  bookings: Booking[];
+  reports: CleaningReportSummary[];
+}
+
 export interface PropertyPlanDetails {
   property: PropertySummary;
   plan: {

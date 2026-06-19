@@ -23,6 +23,7 @@ public interface IClientService
     Task<IReadOnlyList<PaymentDto>> GetPaymentsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<PropertySummaryDto>> GetPropertiesAsync(CancellationToken ct = default);
     Task<PropertyPlanDetailsDto?> GetPropertyPlanAsync(string propertyId, CancellationToken ct = default);
+    Task<PropertyDetailDto?> GetPropertyDetailAsync(string propertyId, CancellationToken ct = default);
     Task<PropertySummaryDto> AddPropertyAsync(CreatePropertyRequest request, CancellationToken ct = default);
     Task<PropertySummaryDto> UpdatePropertyImageAsync(string propertyId, string imageUrl, CancellationToken ct = default);
     Task<PropertySummaryDto> UpdatePropertyNextCleanAsync(string propertyId, string? date, CancellationToken ct = default);

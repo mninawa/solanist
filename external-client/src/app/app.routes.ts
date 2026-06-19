@@ -120,6 +120,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'properties/:id',
+        loadComponent: () =>
+          import('./features/client/property-detail/client-property-detail.component').then(
+            (m) => m.ClientPropertyDetailComponent,
+          ),
+      },
+      {
         path: 'payments',
         loadComponent: () =>
           import('./features/client/payments/client-payments.component').then(

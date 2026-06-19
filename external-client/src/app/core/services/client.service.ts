@@ -13,6 +13,7 @@ import {
   Payment,
   PropertySummary,
   PropertyPlanDetails,
+  PropertyDetail,
   RescheduleBookingRequest,
   Subscription,
   SubscriptionPortfolio,
@@ -219,6 +220,34 @@ export class ClientService {
     const property = this.properties.find((p) => p.id === propertyId);
     if (!property) return of(null).pipe(delay(300));
     return of(buildPropertyPlanDetails({ ...property })).pipe(delay(300));
+  }
+
+  getPropertyDetail(propertyId: string): Observable<PropertyDetail | null> {
+    if (this.useApi) {
+      return this.api.get<PropertyDetail | null>(`/client/properties/${propertyId}/detail`);
+    }
+    const property = this.properties.find((p) => p.id === propertyId);
+    if (!property) return of(null).pipe(delay(200));
+    const planName = property.planName;
+    const detail: PropertyDetail = {
+      property: { ...property },
+      plan: { ...MOCK_SUBSCRIPTION },
+      invoices: MOCK_PAYMENTS
+        .filter((p) => !planName || p.description.toLowerCase() === planName.toLowerCase())
+        .map((p) => ({ ...p })),
+      bookings: this.bookings
+        .filter((b) => b.propertyId === propertyId)
+        .map((b) => ({ ...b })),
+      reports: MOCK_REPORTS.map((r) => ({
+        id: r.id,
+        completedAt: r.completedAt,
+        serviceType: r.serviceType,
+        panelCount: r.panelCount,
+        staffName: r.staffName,
+        thumbnailUrl: r.thumbnailUrl,
+      })),
+    };
+    return of(detail).pipe(delay(200));
   }
 
   addProperty(request: CreatePropertyRequest): Observable<PropertySummary> {

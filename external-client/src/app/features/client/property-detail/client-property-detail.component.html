@@ -1,0 +1,368 @@
+<div class="page-container">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (property(); as prop) {
+    <a routerLink="/client/properties" class="back-link">
+      <app-icon name="arrow-left" [size]="16" />
+      Back to properties
+    </a>
+
+    <!-- Hero -->
+    <header class="property-hero card">
+      <div class="hero-image-wrap">
+        <img [src]="imageSrc(prop)" [alt]="prop.address" (error)="onImageError()" class="hero-image" />
+        <div class="hero-status">
+          @if (prop.subscriptionStatus === 'active') {
+            <span class="badge badge-success">Active</span>
+          } @else {
+            <span class="badge badge-warning">Setup required</span>
+          }
+          @if (prop.isPrimary) {
+            <span class="badge badge-primary-star">
+              <app-icon name="star" [size]="12" />
+              Primary
+            </span>
+          }
+        </div>
+      </div>
+      <div class="hero-body">
+        <h1 class="hero-title">{{ prop.address }}</h1>
+        <p class="hero-location">
+          <app-icon name="map-pin" [size]="14" />
+          {{ prop.city }}, {{ prop.postcode }}
+        </p>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <app-icon name="sun" [size]="16" />
+            <div>
+              <span>Panels</span>
+              <strong>{{ formatPanelCount(prop.panelCount) }}</strong>
+            </div>
+          </div>
+          <div class="hero-stat">
+            <app-icon name="dashboard" [size]="16" />
+            <div>
+              <span>System size</span>
+              <strong>{{ prop.systemSizeKw }} kW</strong>
+            </div>
+          </div>
+          <div class="hero-stat">
+            <app-icon name="home" [size]="16" />
+            <div>
+              <span>Roof type</span>
+              <strong>{{ prop.roofType }}</strong>
+            </div>
+          </div>
+          <div class="hero-stat">
+            <app-icon name="calendar" [size]="16" />
+            <div>
+              <span>Next clean</span>
+              @if (prop.nextCleanDate) {
+                <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</strong>
+              } @else {
+                <strong>Not scheduled</strong>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          @if (needsPlan()) {
+            <button type="button" class="btn btn-primary btn-sm" (click)="openAssignDrawer()">
+              <app-icon name="plus" [size]="16" />
+              Assign plan
+            </button>
+          } @else {
+            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">
+              <app-icon name="subscription" [size]="16" />
+              Manage plan
+            </a>
+          }
+          <a routerLink="/client/bookings" class="btn btn-outline btn-sm">
+            <app-icon name="calendar" [size]="16" />
+            Book a clean
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top stats -->
+    <div class="summary-grid">
+      <div class="stat-card">
+        <div class="stat-label">Subscription</div>
+        @if (plan(); as p) {
+          <div class="stat-value plan-name">{{ p.planName || prop.planName || '—' }}</div>
+          <p class="stat-meta">{{ p.status | titlecase }}</p>
+        } @else {
+          <div class="stat-value plan-name">No plan</div>
+          <p class="stat-meta">Assign to activate</p>
+        }
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cleanings completed</div>
+        <div class="stat-value">{{ cleaningsCompleted() }}</div>
+        <p class="stat-meta">{{ upcomingCleanings().length }} upcoming</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total invoiced</div>
+        <div class="stat-value">{{ totalSpent() | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</div>
+        <p class="stat-meta">Across {{ invoices().length }} invoice{{ invoices().length === 1 ? '' : 's' }}</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Reports</div>
+        <div class="stat-value">{{ reportCount() }}</div>
+        <p class="stat-meta">Detailed cleaning reports</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="activeTab() === 'overview'"
+        [attr.aria-selected]="activeTab() === 'overview'"
+        (click)="setTab('overview')"
+      >
+        Overview
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="activeTab() === 'cleanings'"
+        [attr.aria-selected]="activeTab() === 'cleanings'"
+        (click)="setTab('cleanings')"
+      >
+        Cleanings ({{ bookings().length }})
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        [class.active]="activeTab() === 'invoices'"
+        [attr.aria-selected]="activeTab() === 'invoices'"
+        (click)="setTab('invoices')"
+      >
+        Invoices ({{ invoices().length }})
+      </button>
+    </div>
+
+    @if (activeTab() === 'overview') {
+      <div class="detail-grid">
+        <!-- Property info -->
+        <section class="card detail-card">
+          <h3 class="section-title">Property information</h3>
+          <dl class="info-grid">
+            <dt>Address</dt>
+            <dd>{{ prop.address }}</dd>
+            <dt>City</dt>
+            <dd>{{ prop.city }}</dd>
+            <dt>Postcode</dt>
+            <dd>{{ prop.postcode }}</dd>
+            <dt>Roof type</dt>
+            <dd>{{ prop.roofType }}</dd>
+            <dt>Panels</dt>
+            <dd>{{ formatPanelCount(prop.panelCount) }}</dd>
+            <dt>System size</dt>
+            <dd>{{ prop.systemSizeKw }} kW</dd>
+            @if (prop.accessNotes) {
+              <dt>Access notes</dt>
+              <dd>{{ prop.accessNotes }}</dd>
+            }
+          </dl>
+        </section>
+
+        <!-- Subscription -->
+        <section class="card detail-card">
+          <h3 class="section-title">Subscription</h3>
+          @if (plan(); as p) {
+            <dl class="info-grid">
+              <dt>Plan</dt>
+              <dd><strong>{{ p.planName || prop.planName || '—' }}</strong></dd>
+              <dt>Status</dt>
+              <dd>
+                <span
+                  class="badge"
+                  [class.badge-success]="p.status === 'active'"
+                  [class.badge-warning]="p.status !== 'active'"
+                >{{ p.status | titlecase }}</span>
+              </dd>
+              <dt>Frequency</dt>
+              <dd>{{ prop.planFrequency || p.billingCycle || '—' }}</dd>
+              @if (p.pricePerVisit) {
+                <dt>Price per clean</dt>
+                <dd>{{ p.pricePerVisit | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</dd>
+              }
+              @if (prop.monthlyBilling) {
+                <dt>Monthly billing</dt>
+                <dd>{{ prop.monthlyBilling | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</dd>
+              }
+              @if (p.visitsRemaining !== undefined && prop.visitsPerYear) {
+                <dt>Visits remaining</dt>
+                <dd>{{ p.visitsRemaining }} of {{ prop.visitsPerYear }}</dd>
+              }
+              <dt>Payment method</dt>
+              <dd>{{ p.paymentMethod }}</dd>
+              <dt>Next billing</dt>
+              <dd>{{ p.nextBillingDate ? (p.nextBillingDate | date: 'd MMM yyyy') : '—' }}</dd>
+            </dl>
+            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-block btn-sm">
+              Manage plan
+            </a>
+          } @else {
+            <p class="empty-line">No subscription is attached to this property yet.</p>
+            <button type="button" class="btn btn-primary btn-block btn-sm" (click)="openAssignDrawer()">
+              Assign a plan
+            </button>
+          }
+        </section>
+      </div>
+    }
+
+    @if (activeTab() === 'cleanings') {
+      <section class="card detail-card">
+        <div class="section-header">
+          <h3 class="section-title">Cleaning history</h3>
+          @if (bookings().length) {
+            <span class="muted">{{ bookings().length }} event{{ bookings().length === 1 ? '' : 's' }}</span>
+          }
+        </div>
+
+        @if (!bookings().length) {
+          <app-empty-state
+            iconName="calendar"
+            title="No cleanings yet"
+            message="Once your first clean is booked it will appear here."
+          />
+        } @else {
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Service</th>
+                  <th>Technician</th>
+                  <th>Status</th>
+                  <th class="t-right">Report</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of bookings(); track b.id) {
+                  <tr>
+                    <td data-label="Date">
+                      <strong>{{ b.date | date: 'd MMM yyyy' }}</strong>
+                      <span class="muted">{{ b.timeSlot }}</span>
+                    </td>
+                    <td data-label="Service">{{ b.serviceType }}</td>
+                    <td data-label="Technician">{{ b.staffName ?? '—' }}</td>
+                    <td data-label="Status">
+                      <span [class]="bookingStatusClass(b)">{{ b.status | titlecase }}</span>
+                    </td>
+                    <td data-label="Report" class="t-right">
+                      <a [routerLink]="['/client/bookings', b.id]" class="link-action">
+                        View <app-icon name="chevron-right" [size]="14" />
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      @if (reports().length) {
+        <section class="card detail-card">
+          <div class="section-header">
+            <h3 class="section-title">Cleaning reports</h3>
+            <a routerLink="/client/reports" class="link-action">View all reports</a>
+          </div>
+          <div class="report-cards">
+            @for (report of reports(); track report.id) {
+              <a [routerLink]="['/client/reports', report.id]" class="mini-report-card">
+                @if (report.thumbnailUrl) {
+                  <img [src]="report.thumbnailUrl" alt="Report thumbnail" />
+                }
+                <div class="mini-report-body">
+                  <span class="mini-report-date">{{ report.completedAt | date: 'd MMM yyyy' }}</span>
+                  <span class="badge badge-success">Report ready</span>
+                  <span class="mini-report-link">View report</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    }
+
+    @if (activeTab() === 'invoices') {
+      <section class="card detail-card">
+        <div class="section-header">
+          <h3 class="section-title">Invoices</h3>
+          @if (invoices().length) {
+            <span class="muted">{{ totalSpent() | currency: 'ZAR':'symbol-narrow':'1.0-0' }} total paid</span>
+          }
+        </div>
+
+        @if (!invoices().length) {
+          <app-empty-state
+            iconName="payment"
+            title="No invoices yet"
+            message="Invoices for this property will appear here once a plan is active."
+          />
+        } @else {
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th class="t-right">Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (inv of invoices(); track inv.id) {
+                  <tr>
+                    <td data-label="Date">{{ inv.date | date: 'd MMM yyyy' }}</td>
+                    <td data-label="Description">{{ inv.description }}</td>
+                    <td data-label="Amount" class="t-right">
+                      <strong>{{ inv.amount | currency: 'ZAR':'symbol-narrow':'1.2-2' }}</strong>
+                    </td>
+                    <td data-label="Status">
+                      <span
+                        class="status-pill"
+                        [class.status-paid]="inv.status === 'paid'"
+                        [class.status-pending]="inv.status === 'pending'"
+                        [class.status-failed]="inv.status === 'failed'"
+                      >{{ inv.status | titlecase }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+    } @else {
+      <app-empty-state
+        iconName="home"
+        title="Property not found"
+        message="We couldn't find that property. It may have been removed."
+      />
+      <a routerLink="/client/properties" class="btn btn-outline btn-sm back-cta">Back to properties</a>
+    }
+  }
+</div>
+
+<app-client-assign-plan-drawer
+  [open]="assignDrawerOpen()"
+  [property]="property()"
+  (closed)="closeAssignDrawer()"
+  (planAssigned)="onPlanAssigned()"
+/>

@@ -280,6 +280,12 @@ public sealed class ClientController(IClientService client, IAuthService auth) :
         CancellationToken ct) =>
         OkData(await client.GetPropertyPlanAsync(id, ct));
 
+    [HttpGet("properties/{id}/detail")]
+    public async Task<ActionResult<ApiResponse<PropertyDetailDto?>>> GetPropertyDetail(
+        string id,
+        CancellationToken ct) =>
+        OkData(await client.GetPropertyDetailAsync(id, ct));
+
     [HttpGet("profile")]
     public async Task<ActionResult<ApiResponse<ClientProfileDto>>> GetProfile(CancellationToken ct) =>
         OkData(await client.GetProfileAsync(ct));
