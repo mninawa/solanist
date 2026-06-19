@@ -8,6 +8,7 @@ import { APP_CONFIG } from '../../../core/config/app-config';
 import { PLAN_BENEFITS } from '../../../core/content/client-content';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
+import { ClientAssignPlanDrawerComponent } from '../assign-plan/client-assign-plan-drawer.component';
 
 interface CalendarCell {
   day: number | null;
@@ -18,7 +19,7 @@ interface CalendarCell {
 @Component({
   selector: 'app-client-manage-plan',
   standalone: true,
-  imports: [RouterLink, DatePipe, CurrencyPipe, TitleCasePipe, LoadingStateComponent, AppIconComponent],
+  imports: [RouterLink, DatePipe, CurrencyPipe, TitleCasePipe, LoadingStateComponent, AppIconComponent, ClientAssignPlanDrawerComponent],
   templateUrl: './client-manage-plan.component.html',
   styleUrl: './client-manage-plan.component.scss',
 })
@@ -36,6 +37,7 @@ export class ClientManagePlanComponent implements OnInit {
   paystackEnabled = signal(false);
   billingBusy = signal(false);
   billingMessage = signal<string | null>(null);
+  assignDrawerOpen = signal(false);
   private readonly imageErrors = signal<Set<string>>(new Set());
 
   otherProperties = computed(() => {
@@ -149,6 +151,23 @@ export class ClientManagePlanComponent implements OnInit {
   private reloadPlan(propertyId: string): void {
     this.clientService.getPropertyPlan(propertyId).subscribe({
       next: (details) => this.planDetails.set(details),
+    });
+  }
+
+  openAssignDrawer(): void {
+    this.assignDrawerOpen.set(true);
+  }
+
+  closeAssignDrawer(): void {
+    this.assignDrawerOpen.set(false);
+  }
+
+  onPlanAssigned(): void {
+    const propertyId = this.planDetails()?.property.id;
+    this.closeAssignDrawer();
+    if (propertyId) this.reloadPlan(propertyId);
+    this.clientService.getProperties().subscribe({
+      next: (properties) => this.allProperties.set(properties),
     });
   }
 

@@ -6,6 +6,7 @@ import { ClientService } from '../../../core/services/client.service';
 import { CreatePropertyRequest, PropertySummary } from '../../../core/models/client.models';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
+import { ClientAssignPlanDrawerComponent } from '../assign-plan/client-assign-plan-drawer.component';
 import { fallbackPropertyImage, readAndResizeImage } from '../../../core/util/property-image';
 
 import { APP_CONFIG, clampPanelCount } from '../../../core/config/app-config';
@@ -22,6 +23,7 @@ const ROOF_TYPES = ['Tile Roof', 'Metal Roof', 'Flat Roof', 'Thatch (special acc
     CurrencyPipe,
     LoadingStateComponent,
     AppIconComponent,
+    ClientAssignPlanDrawerComponent,
   ],
   templateUrl: './client-properties.component.html',
   styleUrl: './client-properties.component.scss',
@@ -41,6 +43,7 @@ export class ClientPropertiesComponent implements OnInit {
   uploadingId = signal<string | null>(null);
   uploadError = signal<string | null>(null);
   formImage = signal<string | null>(null);
+  assignPlanProperty = signal<PropertySummary | null>(null);
 
   readonly roofTypes = ROOF_TYPES;
   readonly minPanels = APP_CONFIG.minPanelCount;
@@ -236,6 +239,23 @@ export class ClientPropertiesComponent implements OnInit {
     if (variant === 'purple') return 'badge-plan-purple';
     if (variant === 'blue') return 'badge-plan-blue';
     return 'badge-plan-neutral';
+  }
+
+  openAssignPlan(prop: PropertySummary): void {
+    this.assignPlanProperty.set(prop);
+  }
+
+  closeAssignPlan(): void {
+    this.assignPlanProperty.set(null);
+  }
+
+  onPlanAssigned(): void {
+    this.loadProperties();
+    this.closeAssignPlan();
+  }
+
+  needsPlanSetup(prop: PropertySummary): boolean {
+    return prop.subscriptionStatus !== 'active' || !prop.planName;
   }
 
   private emptyForm(): CreatePropertyRequest {

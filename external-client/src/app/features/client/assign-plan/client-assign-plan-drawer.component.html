@@ -1,0 +1,194 @@
+@if (open()) {
+  <div class="assign-plan-backdrop" (click)="close()">
+    <aside
+      class="assign-plan-drawer"
+      [class.assign-plan-drawer--success]="assignSuccess()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assign-plan-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="drawer-header" [class.drawer-header-minimal]="assignSuccess()">
+        @if (assignSuccess()) {
+          <button type="button" class="icon-btn drawer-close" aria-label="Close" (click)="finish()">
+            <app-icon name="close" [size]="20" />
+          </button>
+        } @else {
+          <div class="drawer-header-top">
+            <button type="button" class="back-link" (click)="back()">
+              <app-icon name="arrow-left" [size]="16" />
+              {{ step() === 1 ? 'Close' : 'Back' }}
+            </button>
+            <h2 id="assign-plan-title">Assign a plan</h2>
+            <button type="button" class="icon-btn drawer-close" aria-label="Close" (click)="close()">
+              <app-icon name="close" [size]="20" />
+            </button>
+          </div>
+
+          @if (!loading() && property(); as prop) {
+            <div class="property-hero">
+              <img
+                [src]="propertyImage()"
+                [alt]="prop.address"
+                class="property-hero-img"
+                (error)="onImageError()"
+              />
+              <div class="property-hero-body">
+                <span class="property-hero-label">Property</span>
+                <strong>{{ prop.address }}</strong>
+                <span>{{ prop.city }}, {{ prop.postcode }}</span>
+                <span class="property-hero-meta">
+                  {{ prop.panelCount }} panels · {{ prop.systemSizeKw }} kW
+                </span>
+              </div>
+            </div>
+
+            <div class="drawer-steps">
+              @for (label of stepLabels; track label; let i = $index) {
+                <div
+                  class="drawer-step"
+                  [class.active]="step() === i + 1"
+                  [class.done]="step() > i + 1 || assignSuccess()"
+                >
+                  <span class="drawer-step-num">{{ i + 1 }}</span>
+                  <span class="drawer-step-label">{{ label }}</span>
+                </div>
+                @if (i < stepLabels.length - 1) {
+                  <div class="drawer-step-line" [class.done]="step() > i + 1"></div>
+                }
+              }
+            </div>
+          }
+        }
+      </header>
+
+      <div class="drawer-body" #drawerBody>
+        @if (loading()) {
+          <app-loading-state />
+        } @else if (assignSuccess()) {
+          <div class="success-content">
+            <div class="success-icon-ring">
+              <app-icon name="check-circle" [size]="40" />
+            </div>
+            <h3>Plan assigned</h3>
+            <p class="success-subtitle">
+              @if (selectedPlan(); as plan) {
+                <strong>{{ plan.name }}</strong> is now active for
+                <strong>{{ property()?.address }}</strong>. We'll confirm your first clean shortly.
+              }
+            </p>
+            <ul class="success-benefits">
+              @for (benefit of planBenefits.slice(0, 3); track benefit) {
+                <li>
+                  <app-icon name="check" [size]="14" />
+                  {{ benefit }}
+                </li>
+              }
+            </ul>
+          </div>
+        } @else if (property()) {
+          @if (step() === 1) {
+            <h3 class="step-title">Choose your cleaning plan</h3>
+            <p class="step-desc">
+              Pick how often you'd like us to clean the panels at this property. You can change plans later.
+            </p>
+
+            <div class="plan-grid">
+              @for (plan of plans(); track plan.id) {
+                <app-plan-card
+                  [plan]="plan"
+                  [selected]="selectedPlanId() === plan.id"
+                  (select)="selectPlan($event)"
+                />
+              }
+            </div>
+          } @else {
+            @if (selectedPlan(); as plan) {
+              <h3 class="step-title">Review &amp; pay</h3>
+              <p class="step-desc">Confirm your plan and complete payment via Paystack to activate this property.</p>
+
+              <div class="review-card card">
+                <div class="review-row">
+                  <span>Property</span>
+                  <strong>{{ property()?.address }}</strong>
+                </div>
+                <div class="review-row">
+                  <span>Plan</span>
+                  <strong>{{ plan.name }}</strong>
+                </div>
+                <div class="review-row">
+                  <span>Frequency</span>
+                  <strong>
+                    @if (plan.visitsPerYear === 1) {
+                      One-time clean
+                    } @else {
+                      {{ plan.visitsPerYear }} cleans per year
+                    }
+                  </strong>
+                </div>
+                <div class="review-row review-row-total">
+                  <span>Per clean</span>
+                  <strong>{{ plan.pricePerVisit | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
+                </div>
+                @if (plan.visitsPerYear > 1) {
+                  <p class="review-note">
+                    {{ plan.annualPrice | currency: 'ZAR':'symbol-narrow':'1.0-0' }} billed annually via Paystack
+                  </p>
+                }
+              </div>
+
+              <ul class="benefit-list">
+                @for (feature of plan.features.slice(0, 4); track feature) {
+                  <li>
+                    <app-icon name="check-circle" [size]="16" />
+                    {{ feature }}
+                  </li>
+                }
+              </ul>
+
+              @if (checkoutError()) {
+                <p class="drawer-error">{{ checkoutError() }}</p>
+              }
+
+              @if (!paystackEnabled()) {
+                <p class="drawer-note">
+                  Online payment is not configured yet. Contact us on WhatsApp and we'll activate your plan manually.
+                </p>
+              }
+            }
+          }
+        }
+      </div>
+
+      @if (!loading() && !assignSuccess()) {
+        <footer class="drawer-footer">
+          @if (step() === 1) {
+            <button
+              type="button"
+              class="btn btn-primary btn-block"
+              [disabled]="!selectedPlanId()"
+              (click)="continueToPayment()"
+            >
+              Continue to payment
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="btn btn-primary btn-block"
+              [disabled]="checkoutBusy() || !paystackEnabled()"
+              (click)="payWithPaystack()"
+            >
+              {{ checkoutBusy() ? 'Opening Paystack…' : 'Pay with Paystack' }}
+            </button>
+          }
+        </footer>
+      } @else if (assignSuccess()) {
+        <footer class="drawer-footer">
+          <button type="button" class="btn btn-primary btn-block" (click)="finish()">
+            Done
+          </button>
+        </footer>
+      }
+    </aside>
+  </div>
+}

@@ -309,25 +309,16 @@
         <span class="assign-eyebrow">Get started</span>
         <h2>No plan assigned yet</h2>
         <p>
-          Choose a cleaning plan for <strong>{{ planDetails()!.property.address }}</strong> and we'll
-          schedule your first professional clean — complete with reminders and photo reports.
+          Choose a cleaning plan for <strong>{{ planDetails()!.property.address }}</strong> and complete
+          payment to schedule your first professional clean.
         </p>
 
-        <ul class="assign-benefits">
-          @for (benefit of planBenefits.slice(0, 4); track benefit) {
-            <li>
-              <app-icon name="check-circle" [size]="16" />
-              {{ benefit }}
-            </li>
-          }
-        </ul>
-
         <div class="assign-actions">
-          <a routerLink="/client/subscription" class="btn btn-primary btn-lg">
+          <button type="button" class="btn btn-primary btn-lg" (click)="openAssignDrawer()">
             <app-icon name="plus" [size]="16" />
-            Assign a plan
-          </a>
-          <a routerLink="/client/subscription" class="btn btn-outline btn-lg">Compare plans</a>
+            Choose a plan
+          </button>
+          <a routerLink="/client/properties" class="btn btn-outline btn-lg">Back to properties</a>
         </div>
       </div>
     }
@@ -345,3 +336,10 @@
     </div>
   }
 </div>
+
+<app-client-assign-plan-drawer
+  [open]="assignDrawerOpen()"
+  [property]="planDetails()?.property ?? null"
+  (closed)="closeAssignDrawer()"
+  (planAssigned)="onPlanAssigned()"
+/>

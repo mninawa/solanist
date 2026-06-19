@@ -248,10 +248,12 @@
                       Set primary
                     </button>
                   }
-                  @if (prop.subscriptionStatus === 'active') {
+                  @if (prop.subscriptionStatus === 'active' && prop.planName) {
                     <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">Manage plan</a>
                   } @else {
-                    <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">Assign plan</a>
+                    <button type="button" class="btn btn-primary btn-sm" (click)="openAssignPlan(prop)">
+                      Assign plan
+                    </button>
                   }
                 </div>
 
@@ -352,10 +354,17 @@
                       </td>
                       <td data-label="Actions">
                         <div class="table-actions">
-                          <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-sm table-action">
-                            Change plan
-                            <app-icon name="chevron-down" [size]="14" />
-                          </a>
+                          @if (needsPlanSetup(prop)) {
+                            <button type="button" class="btn btn-outline btn-sm table-action" (click)="openAssignPlan(prop)">
+                              Assign plan
+                              <app-icon name="chevron-right" [size]="14" />
+                            </button>
+                          } @else {
+                            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-sm table-action">
+                              Change plan
+                              <app-icon name="chevron-down" [size]="14" />
+                            </a>
+                          }
                           @if (canDeleteProperty()) {
                             <button
                               type="button"
@@ -382,3 +391,10 @@
     </div>
   }
 </div>
+
+<app-client-assign-plan-drawer
+  [open]="!!assignPlanProperty()"
+  [property]="assignPlanProperty()"
+  (closed)="closeAssignPlan()"
+  (planAssigned)="onPlanAssigned()"
+/>
