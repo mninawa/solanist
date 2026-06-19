@@ -224,13 +224,13 @@ internal static class MongoSeedData
             PropertyImageUrl = ImageUrl,
             BeforePhotos = [
                 "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=520&fit=crop",
-                "https://images.unsplash.com/photo-1497441173707-f25a2e1d4a65?w=800&h=520&fit=crop",
                 "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&h=520&fit=crop",
+                "https://images.unsplash.com/photo-1605980776566-0486c3ac7617?w=800&h=520&fit=crop",
             ],
             AfterPhotos = [
-                "https://images.unsplash.com/photo-1613665813447-82a78c468a4d?w=800&h=520&fit=crop",
-                "https://images.unsplash.com/photo-1558449455-0aa211637b00?w=800&h=520&fit=crop",
-                "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=520&fit=crop",
+                "https://images.unsplash.com/photo-1754619880959-2b0528375883?w=800&h=520&fit=crop",
+                "https://images.unsplash.com/photo-1545209463-e2825498edbf?w=800&h=520&fit=crop",
+                "https://images.unsplash.com/photo-1559302504-64aae6ca6b6d?w=800&h=520&fit=crop",
             ],
             ChecklistSummary = [
                 "Panels inspected for damage",

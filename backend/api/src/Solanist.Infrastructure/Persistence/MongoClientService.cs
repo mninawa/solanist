@@ -426,17 +426,20 @@ public sealed class MongoClientService : IClientService
                     RoofType = property.RoofType,
                     AccessNotes = property.AccessNotes,
                     PropertyImageUrl = property.ImageUrl,
+                    // All Unsplash IDs below have been spot-checked to return
+                    // HTTP 200 — the previous demo seed was hitting several
+                    // 404s, which broke the after/before photo thumbnails.
                     BeforePhotos =
                     [
                         "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=520&fit=crop",
-                        "https://images.unsplash.com/photo-1497441173707-f25a2e1d4a65?w=800&h=520&fit=crop",
                         "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1605980776566-0486c3ac7617?w=800&h=520&fit=crop",
                     ],
                     AfterPhotos =
                     [
-                        "https://images.unsplash.com/photo-1613665813447-82a78c468a4d?w=800&h=520&fit=crop",
-                        "https://images.unsplash.com/photo-1558449455-0aa211637b00?w=800&h=520&fit=crop",
-                        "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1754619880959-2b0528375883?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1545209463-e2825498edbf?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1559302504-64aae6ca6b6d?w=800&h=520&fit=crop",
                     ],
                     ChecklistSummary =
                     [
@@ -744,9 +747,86 @@ public sealed class MongoClientService : IClientService
     private async Task<List<BookingDocument>> GetBookingDocsAsync(CancellationToken ct) =>
         await Bookings.Find(b => b.CustomerId == CustomerId).ToListAsync(ct);
 
-    private async Task<List<ReportDocument>> GetReportDocsAsync(CancellationToken ct) =>
-        await Reports.Find(r => r.CustomerId == CustomerId).ToListAsync(ct);
+    private async Task<List<ReportDocument>> GetReportDocsAsync(CancellationToken ct)
+    {
+        var docs = await Reports.Find(r => r.CustomerId == CustomerId).ToListAsync(ct);
+        await BackfillBrokenReportPhotosAsync(docs, ct);
+        return docs;
+    }
 
     private async Task<List<PaymentDocument>> GetPaymentDocsAsync(CancellationToken ct) =>
         await Payments.Find(p => p.CustomerId == CustomerId).ToListAsync(ct);
+
+    // -------- Photo URL backfill --------
+    //
+    // Earlier demo seeds shipped a few Unsplash photo IDs that have since
+    // returned 404, leaving broken thumbnails on the Reports list and detail
+    // page. We rewrite those known-bad URLs to a verified working alternative
+    // the first time the customer's reports are read, then persist the fix
+    // so subsequent reads are clean.
+    private static readonly Dictionary<string, string> BrokenPhotoIdReplacements = new()
+    {
+        ["1497441173707-f25a2e1d4a65"] = "1605980776566-0486c3ac7617",
+        ["1613665813447-82a78c468a4d"] = "1754619880959-2b0528375883",
+        ["1558449455-0aa211637b00"] = "1545209463-e2825498edbf",
+        ["1611365892117-bce8666e2c79"] = "1559302504-64aae6ca6b6d",
+        ["1559302995-f1d7e5c5f05e"] = "1466611653911-95081537e5b7",
+    };
+
+    private async Task BackfillBrokenReportPhotosAsync(
+        List<ReportDocument> docs,
+        CancellationToken ct)
+    {
+        if (docs.Count == 0) return;
+
+        foreach (var doc in docs)
+        {
+            var dirty = false;
+            doc.BeforePhotos = RewritePhotoList(doc.BeforePhotos, ref dirty);
+            doc.AfterPhotos = RewritePhotoList(doc.AfterPhotos, ref dirty);
+
+            if (!dirty) continue;
+
+            try
+            {
+                var update = Builders<ReportDocument>.Update
+                    .Set(r => r.BeforePhotos, doc.BeforePhotos)
+                    .Set(r => r.AfterPhotos, doc.AfterPhotos);
+                await Reports.UpdateOneAsync(
+                    r => r.Id == doc.Id && r.CustomerId == CustomerId,
+                    update,
+                    cancellationToken: ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to persist broken-photo backfill for report {ReportId}.",
+                    doc.Id);
+            }
+        }
+    }
+
+    private static List<string> RewritePhotoList(List<string> photos, ref bool dirty)
+    {
+        if (photos.Count == 0) return photos;
+        var rewritten = new List<string>(photos.Count);
+        foreach (var url in photos)
+        {
+            var replacement = url;
+            foreach (var (brokenId, fixedId) in BrokenPhotoIdReplacements)
+            {
+                if (replacement.Contains(brokenId, StringComparison.Ordinal))
+                {
+                    replacement = replacement.Replace(brokenId, fixedId, StringComparison.Ordinal);
+                }
+            }
+            if (!ReferenceEquals(replacement, url) && replacement != url)
+            {
+                dirty = true;
+            }
+            rewritten.Add(replacement);
+        }
+        return rewritten;
+    }
 }

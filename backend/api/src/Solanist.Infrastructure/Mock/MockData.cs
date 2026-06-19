@@ -57,8 +57,8 @@ public static class MockData
         new("report-001", "2026-03-22", "Solar Panel Cleaning Report", 12, "James M.",
             "Hurlingham View, Sandton, 2196",
             ["https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=260&fit=crop",
-             "https://images.unsplash.com/photo-1497441173707-f25a2e1d4a65?w=400&h=260&fit=crop"],
-            ["https://images.unsplash.com/photo-1613665813447-82a78c468a4d?w=400&h=260&fit=crop"],
+             "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=400&h=260&fit=crop"],
+            ["https://images.unsplash.com/photo-1754619880959-2b0528375883?w=400&h=260&fit=crop"],
             ["Panels inspected for damage", "Debris removed", "Full rinse completed"],
             "All 12 panels cleaned successfully. No damage observed."),
     ];
