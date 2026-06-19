@@ -23,6 +23,7 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
         var body = new Dictionary<string, object?>
         {
             ["email"] = email,
+            ["amount"] = amountCents,
             ["reference"] = reference,
             ["currency"] = "ZAR",
             ["metadata"] = metadata,
@@ -30,8 +31,6 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
 
         if (!string.IsNullOrWhiteSpace(planCode))
             body["plan"] = planCode;
-        else
-            body["amount"] = amountCents;
 
         if (!string.IsNullOrWhiteSpace(_options.CallbackUrl))
             body["callback_url"] = _options.CallbackUrl;

@@ -89,8 +89,8 @@ internal sealed class PaystackBillingService(
                 "Paystack initialize failed for customer {CustomerId}: {Detail} (plan={PlanCode}, amountCents={AmountCents})",
                 customerId,
                 detail,
-                usedPlanCode ?? "amount-only",
-                usedPlanCode is null ? amountCents : 0);
+                usedPlanCode ?? planCode ?? "amount-only",
+                amountCents);
             throw new InvalidOperationException($"paystack_initialize_failed: {detail}");
         }
 
@@ -153,7 +153,8 @@ internal sealed class PaystackBillingService(
 
     private static bool IsInvalidPlanError(string? error) =>
         !string.IsNullOrWhiteSpace(error) &&
-        error.Contains("plan", StringComparison.OrdinalIgnoreCase);
+        (error.Contains("plan", StringComparison.OrdinalIgnoreCase) ||
+         error.Contains("invalid amount", StringComparison.OrdinalIgnoreCase));
 
     public async Task<PaystackVerifyResponseDto> VerifyTransactionAsync(
         string customerId,
@@ -463,7 +464,9 @@ internal sealed class PaystackBillingService(
         PropertyDocument? property,
         decimal? catalogPricePerVisit = null)
     {
-        var amount = property?.PricePerClean ?? catalogPricePerVisit ?? subscription.PricePerVisit;
+        var amount = catalogPricePerVisit is > 0 ? catalogPricePerVisit.Value
+            : property?.PricePerClean is > 0 ? property.PricePerClean!.Value
+            : subscription.PricePerVisit;
         if (amount <= 0)
             amount = subscription.AnnualPrice > 0 ? subscription.AnnualPrice / 4 : 499;
 
