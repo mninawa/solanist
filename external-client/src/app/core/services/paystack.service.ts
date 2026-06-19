@@ -59,11 +59,25 @@ export interface PaystackVerifyResult {
   subscriptionStatus?: string | null;
 }
 
+interface PaystackTransaction {
+  reference?: string;
+  status?: string;
+}
+
+interface PaystackResumeOptions {
+  onSuccess?: (transaction: PaystackTransaction) => void;
+  onLoad?: (response: unknown) => void;
+  onCancel?: () => void;
+  onError?: (error: { message?: string }) => void;
+}
+
+interface PaystackPopInstance {
+  resumeTransaction(accessCode: string, options?: PaystackResumeOptions): void;
+}
+
 declare global {
   interface Window {
-    PaystackPop?: {
-      setup(options: Record<string, unknown>): { openIframe(): void };
-    };
+    PaystackPop?: new () => PaystackPopInstance;
   }
 }
 
@@ -124,7 +138,7 @@ export class PaystackService {
           return;
         }
         const script = document.createElement('script');
-        script.src = 'https://js.paystack.co/v1/inline.js';
+        script.src = 'https://js.paystack.co/v2/inline.js';
         script.onload = () => {
           this.scriptLoaded = true;
           resolve();
@@ -137,25 +151,22 @@ export class PaystackService {
 
   private openPopup(init: PaystackInitializeResult): Observable<string> {
     return new Observable<string>((subscriber) => {
-      const handler = window.PaystackPop?.setup({
-        key: init.publicKey,
-        email: init.email,
-        currency: init.currency ?? 'ZAR',
-        access_code: init.accessCode,
-        onClose: () => subscriber.error(new Error('Payment cancelled.')),
-        callback: (response: { reference?: string }) => {
-          const reference = response.reference ?? init.reference;
-          subscriber.next(reference);
-          subscriber.complete();
-        },
-      });
-
-      if (!handler) {
+      const PaystackPop = window.PaystackPop;
+      if (!PaystackPop) {
         subscriber.error(new Error('Paystack popup unavailable.'));
         return;
       }
 
-      handler.openIframe();
+      const popup = new PaystackPop();
+      popup.resumeTransaction(init.accessCode, {
+        onSuccess: (transaction) => {
+          subscriber.next(transaction?.reference ?? init.reference);
+          subscriber.complete();
+        },
+        onCancel: () => subscriber.error(new Error('Payment cancelled.')),
+        onError: (error) =>
+          subscriber.error(new Error(error?.message ?? 'Paystack checkout failed.')),
+      });
     });
   }
 }
