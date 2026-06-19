@@ -15,17 +15,20 @@ public sealed class MongoClientService : IClientService
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<MongoClientService> _logger;
     private readonly AuthOptions _auth;
+    private readonly IPaystackBillingService _paystack;
 
     public MongoClientService(
         IMongoDatabase db,
         ICurrentUser currentUser,
         ILogger<MongoClientService> logger,
-        IOptions<AuthOptions> authOptions)
+        IOptions<AuthOptions> authOptions,
+        IPaystackBillingService paystack)
     {
         _db = db;
         _currentUser = currentUser;
         _logger = logger;
         _auth = authOptions.Value;
+        _paystack = paystack;
     }
 
     private string CustomerId => _currentUser.RequireCustomerId();
@@ -368,7 +371,40 @@ public sealed class MongoClientService : IClientService
             remaining = await GetPropertyDocsAsync(ct);
         }
 
+        var hasActiveProperty = remaining.Any(p =>
+            string.Equals(p.SubscriptionStatus, "active", StringComparison.OrdinalIgnoreCase));
+        if (!hasActiveProperty)
+            await RemoveCustomerSubscriptionAsync(ct);
+
         return remaining.Select(MongoMappers.ToPropertyDto).ToList();
+    }
+
+    private async Task RemoveCustomerSubscriptionAsync(CancellationToken ct)
+    {
+        var subscription = await Subscriptions.Find(s => s.CustomerId == CustomerId).FirstOrDefaultAsync(ct);
+        if (subscription is null) return;
+
+        // Stop recurring billing on Paystack before dropping the local record so the
+        // customer isn't charged for a property they no longer own. Best-effort.
+        if (!string.IsNullOrWhiteSpace(subscription.PaystackSubscriptionCode))
+        {
+            try
+            {
+                await _paystack.CancelSubscriptionAsync(CustomerId, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Could not cancel Paystack subscription for customer {CustomerId} while deleting property.",
+                    CustomerId);
+            }
+        }
+
+        await Subscriptions.DeleteManyAsync(s => s.CustomerId == CustomerId, ct);
+        _logger.LogInformation(
+            "Removed subscription for customer {CustomerId} after deleting its last active property.",
+            CustomerId);
     }
 
     public async Task<ClientProfileDto> GetProfileAsync(CancellationToken ct = default)
