@@ -80,10 +80,10 @@
               Change plan
             </button>
           }
-          <a routerLink="/client/bookings" class="btn btn-outline btn-sm">
+          <button type="button" class="btn btn-outline btn-sm" (click)="openBookClean()">
             <app-icon name="calendar" [size]="16" />
             Book a clean
-          </a>
+          </button>
         </div>
       </div>
     </header>
@@ -482,4 +482,11 @@
   [property]="property()"
   (closed)="closeAssignDrawer()"
   (planAssigned)="onPlanAssigned()"
+/>
+
+<app-client-book-clean
+  [open]="bookCleanOpen()"
+  [initialPropertyId]="property()?.id ?? null"
+  (closed)="closeBookClean()"
+  (bookingCreated)="onBookingCreated()"
 />

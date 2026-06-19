@@ -9,6 +9,7 @@ import { LoadingStateComponent } from '../../../shared/components/loading-state/
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
 import { ClientAssignPlanDrawerComponent } from '../assign-plan/client-assign-plan-drawer.component';
+import { ClientBookCleanComponent } from '../book-clean/client-book-clean.component';
 import { fallbackPropertyImage } from '../../../core/util/property-image';
 
 type DetailTab = 'overview' | 'cleanings' | 'invoices';
@@ -27,6 +28,7 @@ type PlanAction = null | 'cancel';
     EmptyStateComponent,
     AppIconComponent,
     ClientAssignPlanDrawerComponent,
+    ClientBookCleanComponent,
   ],
   templateUrl: './client-property-detail.component.html',
   styleUrl: './client-property-detail.component.scss',
@@ -41,6 +43,7 @@ export class ClientPropertyDetailComponent implements OnInit {
   imageError = signal(false);
   activeTab = signal<DetailTab>('overview');
   assignDrawerOpen = signal(false);
+  bookCleanOpen = signal(false);
 
   // Inline plan-management state
   paystackEnabled = signal(false);
@@ -132,6 +135,20 @@ export class ClientPropertyDetailComponent implements OnInit {
     const prop = this.property();
     if (prop) this.load(prop.id);
     this.flash('success', 'Plan updated.');
+  }
+
+  openBookClean(): void {
+    this.bookCleanOpen.set(true);
+  }
+
+  closeBookClean(): void {
+    this.bookCleanOpen.set(false);
+  }
+
+  onBookingCreated(): void {
+    const prop = this.property();
+    if (prop) this.load(prop.id);
+    this.flash('success', 'Booking received — we\u2019ll confirm shortly.');
   }
 
   /* ----- Inline plan management ----- */

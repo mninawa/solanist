@@ -53,6 +53,8 @@ export class ClientBookCleanComponent {
   private readonly drawerBody = viewChild<ElementRef>('drawerBody');
 
   readonly open = input(false);
+  /** When provided, the drawer pre-selects this property and skips the property step. */
+  readonly initialPropertyId = input<string | null>(null);
   readonly closed = output<void>();
   readonly bookingCreated = output<Booking>();
 
@@ -116,15 +118,24 @@ export class ClientBookCleanComponent {
     this.clientService.getProperties().subscribe({
       next: (properties) => {
         this.properties.set(properties);
-        const primary = properties.find((p) => p.isPrimary) ?? properties[0];
+        const initial = this.initialPropertyId();
+        const preselected = initial
+          ? (properties.find((p) => p.id === initial) ?? null)
+          : null;
+        const primary = preselected ?? properties.find((p) => p.isPrimary) ?? properties[0];
         if (primary) this.selectedPropertyId.set(primary.id);
         this.loading.set(false);
+        // Skip the property-picker step when the caller pre-selected one
+        if (preselected) this.continueFromProperty();
       },
     });
     this.clientService.getSubscription().subscribe({
       next: (sub) => this.extraCleanPrice.set(sub.pricePerVisit),
     });
   }
+
+  /** True when the drawer was opened pre-locked to a specific property. */
+  readonly isLockedToProperty = computed(() => !!this.initialPropertyId());
 
   reset(): void {
     this.step.set(1);
@@ -183,7 +194,9 @@ export class ClientBookCleanComponent {
       return;
     }
     const current = this.step();
-    if (current > 1) this.goToStep(current - 1);
+    // When locked to a property, don't allow going back to the property picker.
+    const minStep = this.isLockedToProperty() ? 2 : 1;
+    if (current > minStep) this.goToStep(current - 1);
     else this.close();
   }
 
