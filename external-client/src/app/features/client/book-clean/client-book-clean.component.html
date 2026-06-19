@@ -121,7 +121,15 @@
 
             <div class="banner-info add-property-banner">
               <span>Don't see a property? Add a new property to book a clean.</span>
-              <a routerLink="/client/properties" class="btn btn-outline btn-sm" (click)="close()">+ Add property</a>
+              <a
+                routerLink="/client/properties"
+                class="btn btn-outline btn-sm btn-icon"
+                (click)="close()"
+                aria-label="Add property"
+                title="Add property"
+              >
+                <app-icon name="plus" [size]="14" />
+              </a>
             </div>
 
             <button type="button" class="btn btn-primary btn-lg btn-block" (click)="continueFromProperty()">

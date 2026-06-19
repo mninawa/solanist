@@ -70,19 +70,34 @@
 
         <div class="hero-actions">
           @if (needsPlan()) {
-            <button type="button" class="btn btn-primary btn-sm" (click)="openAssignDrawer()">
+            <button
+              type="button"
+              class="btn btn-primary btn-sm btn-icon"
+              (click)="openAssignDrawer()"
+              aria-label="Assign plan"
+              title="Assign plan"
+            >
               <app-icon name="plus" [size]="16" />
-              Assign plan
             </button>
           } @else {
-            <button type="button" class="btn btn-primary btn-sm" (click)="changePlan()">
+            <button
+              type="button"
+              class="btn btn-primary btn-sm btn-icon"
+              (click)="changePlan()"
+              aria-label="Change plan"
+              title="Change plan"
+            >
               <app-icon name="subscription" [size]="16" />
-              Change plan
             </button>
           }
-          <button type="button" class="btn btn-outline btn-sm" (click)="openBookClean()">
+          <button
+            type="button"
+            class="btn btn-outline btn-sm btn-icon"
+            (click)="openBookClean()"
+            aria-label="Book a clean"
+            title="Book a clean"
+          >
             <app-icon name="calendar" [size]="16" />
-            Book a clean
           </button>
         </div>
       </div>
