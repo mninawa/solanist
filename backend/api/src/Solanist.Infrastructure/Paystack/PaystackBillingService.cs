@@ -51,6 +51,10 @@ internal sealed class PaystackBillingService(
         if (string.IsNullOrWhiteSpace(email))
             throw new InvalidOperationException("email_required");
 
+        email = email.Trim();
+        if (!IsValidCheckoutEmail(email))
+            throw new InvalidOperationException("invalid_email");
+
         PropertyDocument? property = null;
         if (!string.IsNullOrWhiteSpace(request.PropertyId))
         {
@@ -94,7 +98,12 @@ internal sealed class PaystackBillingService(
             throw new InvalidOperationException($"paystack_initialize_failed: {detail}");
         }
 
-        return new PaystackInitializeResponseDto(init.AccessCode, init.Reference, _options.PublicKey, usedPlanCode);
+        return new PaystackInitializeResponseDto(
+            init.AccessCode,
+            init.Reference,
+            _options.PublicKey,
+            email,
+            usedPlanCode);
     }
 
     private async Task<(PaystackInitializeData? Init, string? Error, string? UsedPlanCode)> InitializeWithPlanFallbackAsync(
@@ -472,6 +481,21 @@ internal sealed class PaystackBillingService(
 
         var cents = (int)Math.Round(amount * 100, MidpointRounding.AwayFromZero);
         return cents < 100 ? 49900 : cents;
+    }
+
+    private static bool IsValidCheckoutEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return string.Equals(addr.Address, email, StringComparison.OrdinalIgnoreCase)
+                && email.Contains('@')
+                && email.Contains('.');
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string FormatPaymentMethod(PaystackAuthorizationData? auth)

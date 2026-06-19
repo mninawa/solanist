@@ -8,7 +8,9 @@ public sealed record PaystackInitializeResponseDto(
     string AccessCode,
     string Reference,
     string PublicKey,
-    string? PlanCode = null);
+    string Email,
+    string? PlanCode = null,
+    string Currency = "ZAR");
 
 public sealed record PaystackVerifyRequestDto(string Reference);
 

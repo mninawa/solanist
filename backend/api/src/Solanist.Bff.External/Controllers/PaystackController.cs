@@ -30,9 +30,12 @@ public sealed class PaystackController(
         {
             var customerId = currentUser.RequireCustomerId();
             var profile = await client.GetProfileAsync(ct);
+            var email = !string.IsNullOrWhiteSpace(profile.Email)
+                ? profile.Email.Trim()
+                : currentUser.Email?.Trim() ?? "";
             var result = await paystack.InitializeSubscriptionAsync(
                 customerId,
-                profile.Email,
+                email,
                 profile.FirstName,
                 profile.LastName,
                 request,
@@ -77,7 +80,7 @@ public sealed class PaystackController(
         if (message.StartsWith("paystack_initialize_failed:", StringComparison.Ordinal))
             return StatusCode(StatusCodes.Status502BadGateway, ApiResponse<T?>.Fail(message));
 
-        if (message is "customer_not_linked" or "email_required" or "subscription_not_found")
+        if (message is "customer_not_linked" or "email_required" or "invalid_email" or "subscription_not_found")
             return BadRequest(ApiResponse<T?>.Fail(message));
 
         return BadRequest(ApiResponse<T?>.Fail(message));

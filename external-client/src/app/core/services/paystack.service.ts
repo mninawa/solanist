@@ -25,6 +25,8 @@ function paystackErrorMessage(err: unknown): string {
         return 'Your account is not linked to a customer profile. Contact support.';
       if (apiMessage === 'email_required')
         return 'Your profile needs an email address before paying with Paystack.';
+      if (apiMessage === 'invalid_email')
+        return 'Your profile email is invalid — update it in Account settings or sign in with Google again.';
       if (apiMessage === 'paystack_not_configured')
         return 'Paystack is not configured yet.';
       return apiMessage;
@@ -46,7 +48,9 @@ export interface PaystackInitializeResult {
   accessCode: string;
   reference: string;
   publicKey: string;
+  email: string;
   planCode?: string | null;
+  currency?: string;
 }
 
 export interface PaystackVerifyResult {
@@ -135,6 +139,8 @@ export class PaystackService {
     return new Observable<string>((subscriber) => {
       const handler = window.PaystackPop?.setup({
         key: init.publicKey,
+        email: init.email,
+        currency: init.currency ?? 'ZAR',
         access_code: init.accessCode,
         onClose: () => subscriber.error(new Error('Payment cancelled.')),
         callback: (response: { reference?: string }) => {
