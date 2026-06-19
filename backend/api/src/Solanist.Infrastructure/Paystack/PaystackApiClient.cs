@@ -185,10 +185,37 @@ internal sealed class PaystackVerifyData
     public string? Status { get; set; }
     public string? Reference { get; set; }
     public int Amount { get; set; }
+
+    // Paystack sometimes returns these as "" / 0 / [] instead of an object or null when
+    // absent (e.g. a transaction with no plan), so deserialize them tolerantly.
+    [JsonConverter(typeof(TolerantObjectJsonConverter<PaystackCustomerData>))]
     public PaystackCustomerData? Customer { get; set; }
+
+    [JsonConverter(typeof(TolerantObjectJsonConverter<PaystackAuthorizationData>))]
     public PaystackAuthorizationData? Authorization { get; set; }
+
+    [JsonConverter(typeof(TolerantObjectJsonConverter<PaystackPlanData>))]
     public PaystackPlanData? Plan { get; set; }
+
     public JsonElement Metadata { get; set; }
+}
+
+/// <summary>
+/// Reads a JSON object into <typeparamref name="T"/>, but returns null for any non-object
+/// token (string, number, array, etc.). Paystack is inconsistent about empty values.
+/// </summary>
+internal sealed class TolerantObjectJsonConverter<T> : JsonConverter<T> where T : class
+{
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.StartObject)
+            return JsonSerializer.Deserialize<T>(ref reader, options);
+        reader.Skip();
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
+        JsonSerializer.Serialize(writer, value, options);
 }
 
 internal sealed class PaystackCustomerData
