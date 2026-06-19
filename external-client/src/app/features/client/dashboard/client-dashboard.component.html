@@ -3,202 +3,232 @@
     <app-loading-state />
   } @else {
     @if (dashboard(); as d) {
-      <header class="greeting-row">
-        <div class="greeting">
-          <h1>{{ d.greeting }}, {{ d.customerName }}!</h1>
-          <p>Here's what's happening with your solar care.</p>
-        </div>
-
-        @if (properties().length > 1) {
-          <div class="property-switcher">
-            <label class="property-switcher-label" for="dashboard-property">Viewing property</label>
-            <div class="property-switcher-control">
-              <app-icon name="home" [size]="16" />
-              <select
-                id="dashboard-property"
-                class="property-select"
-                [value]="selectedPropertyId() ?? ''"
-                (change)="selectProperty($any($event.target).value)"
-              >
-                @for (prop of properties(); track prop.id) {
-                  <option [value]="prop.id">{{ prop.address }}</option>
-                }
-              </select>
-              <app-icon name="chevron-down" [size]="16" />
-            </div>
-          </div>
-        }
-      </header>
-
-      <!-- Top summary row -->
-      <div class="summary-grid">
-        <div class="stat-card stat-accent-blue">
-          <div class="stat-head">
-            <div class="stat-label">Next Cleaning</div>
-            <span class="stat-icon"><app-icon name="calendar" [size]="18" /></span>
-          </div>
-          @if (upcomingBooking(); as booking) {
-            <div class="stat-value">{{ booking.date | date: 'd MMM yyyy' }}</div>
-            <p class="card-meta">{{ booking.timeSlot }}</p>
-            <span class="badge badge-countdown">In {{ daysUntil(booking.date) }} days</span>
-          } @else if (selectedProperty()?.nextCleanDate) {
-            <div class="stat-value">{{ selectedProperty()!.nextCleanDate | date: 'd MMM yyyy' }}</div>
-            <p class="card-meta">{{ selectedProperty()?.nextCleanTimeSlot }}</p>
-          } @else {
-            <p class="card-meta">No upcoming clean</p>
-          }
-        </div>
-
-        <div class="stat-card stat-accent-gold">
-          <div class="stat-head">
-            <div class="stat-label">Active Plan</div>
-            <span class="stat-icon"><app-icon name="subscription" [size]="18" /></span>
-          </div>
-          @if (selectedProperty(); as prop) {
-            <div class="stat-value plan-name">{{ prop.planName ?? 'No plan' }}</div>
-            <p class="card-meta">{{ prop.planFrequency }}</p>
-            @if (prop.subscriptionStatus === 'active') {
-              <a [routerLink]="['/client/properties', prop.id, 'plan']" class="link-action">
-                Manage plan <app-icon name="chevron-right" [size]="14" />
-              </a>
-            }
-          }
-        </div>
-
-        @if (selectedProperty(); as prop) {
-          <a [routerLink]="['/client/properties']" class="stat-card stat-card-link stat-accent-green">
-            <div class="stat-head">
-              <div class="stat-label">Property</div>
-              <span class="stat-icon"><app-icon name="home" [size]="18" /></span>
-            </div>
-            <div class="stat-value address">{{ prop.address }}</div>
-            <p class="card-meta">{{ prop.city }}, {{ prop.postcode }}</p>
-            <p class="property-specs">
-              {{ formatPanelCount(prop.panelCount) }} panels · {{ prop.systemSizeKw }} kW
-            </p>
-            <span class="link-action">
-              View properties <app-icon name="chevron-right" [size]="14" />
-            </span>
-          </a>
-        }
-
-        <div class="stat-card stat-accent-purple">
-          <div class="stat-head">
-            <div class="stat-label">Last Report</div>
-            <span class="stat-icon"><app-icon name="report" [size]="18" /></span>
-          </div>
-          @if (d.latestReport; as report) {
-            <div class="stat-value">{{ report.completedAt | date: 'd MMM yyyy' }}</div>
-            <span class="badge badge-success">Completed</span>
-            <a [routerLink]="['/client/reports', report.id]" class="link-action">
-              View report <app-icon name="chevron-right" [size]="14" />
-            </a>
-          } @else {
-            <p class="card-meta">No reports yet</p>
-          }
-        </div>
+    <header class="greeting-row">
+      <div class="greeting">
+        <h1>{{ d.greeting }}, {{ d.customerName }}!</h1>
+        <p>Here's your solar care overview across all your properties.</p>
       </div>
 
-      <!-- Main content row -->
-      <div class="main-grid">
-        <div class="main-left">
-          <div class="solar-system-card card">
-            <h3 class="section-title">Your Solar System</h3>
-            @if (selectedProperty(); as prop) {
-              <div class="solar-image">
-                @if (prop.imageUrl && !hasImageError(prop.id)) {
-                  <img [src]="prop.imageUrl" [alt]="prop.address" (error)="onImageError(prop.id)" />
-                } @else {
-                  <div class="solar-image-fallback">
-                    <app-icon name="home" [size]="44" />
-                    <span>{{ prop.address }}</span>
-                  </div>
-                }
-                <div class="solar-overlay">
-                  <span class="overlay-badge">{{ formatPanelCount(prop.panelCount) }} panels</span>
-                  <span class="overlay-badge">{{ prop.systemSizeKw }} kW system size</span>
-                </div>
-              </div>
-            }
-            <div class="system-status">
-              <app-icon name="check-circle" [size]="18" />
-              {{ d.systemStatus }}
-            </div>
-          </div>
-
-          <div class="value-props-card card">
-            <h3>Keep your panels performing at their best</h3>
-            <ul class="value-list">
-              @for (prop of d.valueProps; track prop) {
-                <li>
-                  <app-icon name="check" [size]="16" />
-                  {{ prop }}
-                </li>
-              }
-            </ul>
-            <div class="value-illustration" aria-hidden="true">
-              <svg viewBox="0 0 120 80" fill="none">
-                <path d="M10 60 L30 40 L50 50 L70 30 L90 45 L110 25" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <rect x="20" y="48" width="24" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
-                <rect x="50" y="42" width="24" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
-                <circle cx="95" cy="18" r="10" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="main-right">
-          @if (upcomingBooking(); as booking) {
-            @if (selectedProperty(); as prop) {
-            <div class="upcoming-card card">
-              <h3 class="section-title">Upcoming Booking</h3>
-              <div class="booking-date-block">
-                <span class="booking-day">{{ booking.date | date: 'd' }}</span>
-                <span class="booking-month">{{ booking.date | date: 'MMM' | uppercase }}</span>
-              </div>
-              <p class="booking-type">Solar Panel Cleaning</p>
-              <p class="booking-detail">{{ booking.timeSlot }}</p>
-              <p class="booking-detail">{{ prop.address }}, {{ prop.city }}</p>
-              <button type="button" class="btn btn-outline btn-block btn-sm" (click)="openReschedule()">
-                Reschedule booking
-              </button>
-              <div class="expect-section">
-                <h4>What to expect</h4>
-                <ul>
-                  @for (item of expectChecklist; track item) {
-                    <li>{{ item }}</li>
-                  }
-                </ul>
-              </div>
-            </div>
-            }
-          }
-
-          <div class="support-card card">
-            <h3>Need help?</h3>
-            <p>Our team is ready to assist you.</p>
-            <a
-              [href]="'https://wa.me/' + config.supportWhatsApp"
-              target="_blank"
-              class="btn btn-primary btn-block"
+      @if (properties().length) {
+        <div class="property-switcher">
+          <label class="property-switcher-label" for="dashboard-filter">Viewing</label>
+          <div class="property-switcher-control">
+            <app-icon name="home" [size]="16" />
+            <select
+              id="dashboard-filter"
+              class="property-select"
+              [value]="viewFilter()"
+              (change)="setFilter($any($event.target).value)"
             >
-              <app-icon name="chat" [size]="18" />
-              Chat on WhatsApp
-            </a>
-            <a [href]="'tel:' + config.supportPhone" class="btn btn-secondary btn-block">
-              <app-icon name="phone" [size]="18" />
-              Call {{ config.supportPhone }}
-            </a>
+              <option value="all">All properties ({{ properties().length }})</option>
+              @for (prop of properties(); track prop.id) {
+                <option [value]="prop.id">{{ prop.address }}</option>
+              }
+            </select>
+            <app-icon name="chevron-down" [size]="16" />
           </div>
         </div>
+      }
+    </header>
+
+    <!-- Top summary row -->
+    <div class="summary-grid">
+      <div class="stat-card stat-accent-blue">
+        <div class="stat-head">
+          <div class="stat-label">Total Properties</div>
+          <span class="stat-icon"><app-icon name="home" [size]="18" /></span>
+        </div>
+        <div class="stat-value">{{ totalProperties() }}</div>
+        <p class="card-meta">Managing {{ totalProperties() }} location{{ totalProperties() === 1 ? '' : 's' }}</p>
       </div>
 
-      <!-- Bottom row -->
-      <div class="bottom-grid">
-        <div class="reports-section card">
+      <div class="stat-card stat-accent-green">
+        <div class="stat-head">
+          <div class="stat-label">Active Subscriptions</div>
+          <span class="stat-icon"><app-icon name="shield" [size]="18" /></span>
+        </div>
+        <div class="stat-value">{{ activeSubscriptions() }}</div>
+        <p class="card-meta">
+          {{ allActive() ? 'All subscriptions active' : activeSubscriptions() + ' of ' + totalProperties() + ' active' }}
+        </p>
+      </div>
+
+      <div class="stat-card stat-accent-gold">
+        <div class="stat-head">
+          <div class="stat-label">Next Clean</div>
+          <span class="stat-icon"><app-icon name="calendar" [size]="18" /></span>
+        </div>
+        @if (nextCleanProperty(); as prop) {
+          <div class="stat-value">{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</div>
+          <p class="card-meta">{{ prop.nextCleanTimeSlot || prop.address }}</p>
+        } @else {
+          <div class="stat-value">—</div>
+          <p class="card-meta">No cleans scheduled</p>
+        }
+      </div>
+
+      <div class="stat-card stat-accent-purple">
+        <div class="stat-head">
+          <div class="stat-label">Combined Billing</div>
+          <span class="stat-icon"><app-icon name="wallet" [size]="18" /></span>
+        </div>
+        <div class="stat-value">{{ combinedBillingTotal() | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</div>
+        <p class="card-meta">Total across all properties</p>
+      </div>
+    </div>
+
+    <!-- Main content row -->
+    <div class="dash-grid">
+      <div class="dash-main">
+        <!-- Property portfolio -->
+        <div class="card portfolio-card">
+          <div class="portfolio-head">
+            <div>
+              <h3 class="section-title">Property Portfolio ({{ totalProperties() }})</h3>
+              <p class="portfolio-sub">Your solar systems at a glance.</p>
+            </div>
+            <div class="portfolio-tools">
+              <div class="view-toggle" role="group" aria-label="Portfolio view">
+                <button
+                  type="button"
+                  class="view-toggle-btn"
+                  [class.active]="portfolioView() === 'grid'"
+                  aria-label="Grid view"
+                  (click)="setView('grid')"
+                >
+                  <app-icon name="grid" [size]="16" />
+                </button>
+                <button
+                  type="button"
+                  class="view-toggle-btn"
+                  [class.active]="portfolioView() === 'list'"
+                  aria-label="List view"
+                  (click)="setView('list')"
+                >
+                  <app-icon name="list" [size]="16" />
+                </button>
+              </div>
+              <a routerLink="/client/properties" class="btn btn-outline btn-sm add-property-btn">
+                <app-icon name="plus" [size]="16" />
+                Add Property
+              </a>
+            </div>
+          </div>
+
+          @if (!filteredProperties().length) {
+            <div class="portfolio-empty">
+              <app-icon name="home" [size]="32" />
+              <p>No properties yet.</p>
+              <a routerLink="/client/properties" class="btn btn-primary btn-sm">Add a property</a>
+            </div>
+          } @else if (portfolioView() === 'grid') {
+            <div class="portfolio-grid">
+              @for (prop of filteredProperties(); track prop.id) {
+                <div class="pf-card">
+                  <div class="pf-card-img">
+                    <img [src]="displayImage(prop)" [alt]="prop.address" (error)="onImageError(prop.id)" />
+                    @if (prop.subscriptionStatus === 'active') {
+                      <span class="badge badge-success pf-status">Active</span>
+                    } @else {
+                      <span class="badge badge-warning pf-status">Setup required</span>
+                    }
+                  </div>
+                  <div class="pf-card-body">
+                    <div class="pf-card-name">
+                      <h4>{{ prop.address }}</h4>
+                      <p>{{ prop.city }}, {{ prop.postcode }}</p>
+                    </div>
+                    <div class="pf-specs">
+                      <span><app-icon name="sun" [size]="14" /> {{ formatPanelCount(prop.panelCount) }} panels</span>
+                      <span><app-icon name="dashboard" [size]="14" /> {{ prop.systemSizeKw }} kW</span>
+                    </div>
+                    @if (prop.planName) {
+                      <span class="plan-badge" [class]="planBadgeClass(prop.planVariant)">{{ prop.planName }}</span>
+                    } @else {
+                      <span class="plan-badge badge-plan-neutral">No plan assigned</span>
+                    }
+                    <p class="pf-nextclean">
+                      <app-icon name="calendar" [size]="14" />
+                      @if (prop.nextCleanDate) {
+                        Next clean {{ prop.nextCleanDate | date: 'd MMM yyyy' }}
+                      } @else {
+                        No clean scheduled
+                      }
+                    </p>
+                    <div class="pf-actions">
+                      <a routerLink="/client/properties" class="btn btn-outline btn-sm">View property</a>
+                      @if (needsPlan(prop)) {
+                        <button type="button" class="btn btn-primary btn-sm" (click)="openAssignPlan(prop)">Assign plan</button>
+                      } @else {
+                        <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">Manage plan</a>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="portfolio-list">
+              @for (prop of filteredProperties(); track prop.id) {
+                <div class="pf-row">
+                  <img class="pf-row-img" [src]="displayImage(prop)" [alt]="prop.address" (error)="onImageError(prop.id)" />
+                  <div class="pf-row-name">
+                    <h4>{{ prop.address }}</h4>
+                    <p>{{ prop.city }}, {{ prop.postcode }}</p>
+                  </div>
+                  <div class="pf-row-cell">
+                    <strong>{{ formatPanelCount(prop.panelCount) }}</strong>
+                    <span>Panels</span>
+                  </div>
+                  <div class="pf-row-cell">
+                    <strong>{{ prop.systemSizeKw }} kW</strong>
+                    <span>System size</span>
+                  </div>
+                  <div class="pf-row-cell pf-row-plan">
+                    @if (prop.planName) {
+                      <strong>{{ prop.planName }}</strong>
+                      <span>{{ prop.subscriptionStatus === 'active' ? 'Active plan' : 'Setup required' }}</span>
+                    } @else {
+                      <strong>No plan</strong>
+                      <span>Not subscribed</span>
+                    }
+                  </div>
+                  <div class="pf-row-cell">
+                    @if (prop.nextCleanDate) {
+                      <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</strong>
+                    } @else {
+                      <strong>—</strong>
+                    }
+                    <span>Next clean</span>
+                  </div>
+                  <div class="pf-row-status">
+                    @if (prop.subscriptionStatus === 'active') {
+                      <span class="status-dot status-dot-active"></span> Active
+                    } @else {
+                      <span class="status-dot status-dot-warning"></span> Setup
+                    }
+                  </div>
+                  <div class="pf-row-actions">
+                    <a routerLink="/client/properties" class="btn btn-outline btn-sm">View</a>
+                    @if (needsPlan(prop)) {
+                      <button type="button" class="btn btn-primary btn-sm" (click)="openAssignPlan(prop)">Assign plan</button>
+                    } @else {
+                      <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">Manage plan</a>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <a routerLink="/client/properties" class="portfolio-footer-link">View all properties</a>
+        </div>
+
+        <!-- Recent reports -->
+        <div class="card reports-section">
           <div class="section-header">
             <h3 class="section-title">Recent Reports</h3>
-            <a routerLink="/client/reports" class="link-action">View all</a>
+            <a routerLink="/client/reports" class="link-action">View all reports</a>
           </div>
           @if (recentReports().length) {
             <div class="report-cards">
@@ -209,7 +239,7 @@
                   }
                   <div class="mini-report-body">
                     <span class="mini-report-date">{{ report.completedAt | date: 'd MMM yyyy' }}</span>
-                    <span class="badge badge-success">Completed</span>
+                    <span class="badge badge-success">Report ready</span>
                     <span class="mini-report-link">View report</span>
                   </div>
                 </a>
@@ -219,48 +249,95 @@
             <p class="empty-hint">Reports will appear here after your first clean.</p>
           }
         </div>
+      </div>
 
-        <div class="subscription-card card">
-          <h3 class="section-title">Subscription Summary</h3>
-          @if (selectedProperty(); as prop) {
-            <dl class="sub-details">
-              <dt>Plan</dt>
-              <dd>{{ prop.planName ?? '—' }}</dd>
-              <dt>Frequency</dt>
-              <dd>{{ prop.planFrequency ?? '—' }}</dd>
-            </dl>
-            @if (prop.visitsPerYear && prop.visitsRemaining !== undefined) {
-              <div class="visits-progress">
-                <div class="progress-header">
-                  <span>Visits remaining</span>
-                  <strong>{{ prop.visitsRemaining }} of {{ prop.visitsPerYear }}</strong>
-                </div>
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    [style.width.%]="(visitsUsed() / prop.visitsPerYear) * 100"
-                  ></div>
-                </div>
-              </div>
-            }
-            @if (prop.pricePerClean) {
-              <div class="annual-total">
-                <span>Price per clean</span>
-                <strong>{{ prop.pricePerClean | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
-              </div>
-            }
-            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-sm btn-block">Manage plan</a>
-            <a routerLink="/client/subscription" class="btn btn-ghost btn-sm btn-block">View all subscriptions</a>
+      <!-- Sidebar -->
+      <aside class="dash-side">
+        <!-- Upcoming bookings -->
+        <div class="card sidebar-card">
+          <div class="section-header">
+            <h3 class="section-title">Upcoming Bookings</h3>
+            <a routerLink="/client/bookings" class="link-action">View all</a>
+          </div>
+          @if (upcomingBookings().length) {
+            <div class="booking-list">
+              @for (b of upcomingBookings(); track b.id) {
+                <a [routerLink]="['/client/bookings', b.id]" class="booking-row">
+                  <div class="booking-date-block">
+                    <span class="booking-day">{{ b.date | date: 'd' }}</span>
+                    <span class="booking-month">{{ b.date | date: 'MMM' | uppercase }}</span>
+                  </div>
+                  <div class="booking-row-info">
+                    <strong>{{ b.propertyAddress }}</strong>
+                    <span>{{ b.serviceType }}</span>
+                    <span>{{ b.timeSlot }}</span>
+                  </div>
+                  <span class="badge" [class.badge-success]="b.confirmationStatus === 'confirmed'" [class.badge-countdown]="b.confirmationStatus !== 'confirmed'">
+                    {{ b.confirmationStatus === 'confirmed' ? 'Confirmed' : 'Scheduled' }}
+                  </span>
+                </a>
+              }
+            </div>
+            <a routerLink="/client/bookings" class="btn btn-outline btn-block btn-sm">Manage all bookings</a>
+          } @else {
+            <p class="empty-hint">No upcoming bookings.</p>
           }
         </div>
-      </div>
+
+        <!-- Combined billing summary -->
+        <div class="card sidebar-card">
+          <div class="section-header">
+            <h3 class="section-title">Combined Billing Summary</h3>
+            <a routerLink="/client/payments" class="link-action">View details</a>
+          </div>
+          @if (billingLines().length) {
+            <div class="billing-lines">
+              @for (line of billingLines(); track line.propertyId) {
+                <div class="billing-line">
+                  <div class="billing-line-info">
+                    <strong>{{ line.name }}</strong>
+                    <span>{{ line.planName }}</span>
+                  </div>
+                  <div class="billing-line-amt">
+                    <strong>{{ line.amount | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
+                    @if (line.due) {
+                      <span>Due {{ line.due | date: 'd MMM yyyy' }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="billing-total-row">
+              <span>Total due across all properties</span>
+              <strong>{{ combinedBillingTotal() | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
+            </div>
+          } @else {
+            <p class="empty-hint">Assign a plan to see billing here.</p>
+          }
+        </div>
+
+        <!-- Support -->
+        <div class="card support-card">
+          <h3>Need help?</h3>
+          <p>Our team is ready to assist you.</p>
+          <a [href]="'https://wa.me/' + config.supportWhatsApp" target="_blank" class="btn btn-primary btn-block">
+            <app-icon name="chat" [size]="18" />
+            Chat on WhatsApp
+          </a>
+          <a [href]="'tel:' + config.supportPhone" class="btn btn-secondary btn-block">
+            <app-icon name="phone" [size]="18" />
+            Call {{ config.supportPhone }}
+          </a>
+        </div>
+      </aside>
+    </div>
     }
   }
 </div>
 
-<app-client-booking-reschedule
-  [open]="!!rescheduleBookingId()"
-  [bookingId]="rescheduleBookingId()"
-  (closed)="closeReschedule()"
-  (rescheduled)="onRescheduled($event)"
+<app-client-assign-plan-drawer
+  [open]="!!assignPlanProperty()"
+  [property]="assignPlanProperty()"
+  (closed)="closeAssignPlan()"
+  (planAssigned)="onPlanAssigned()"
 />

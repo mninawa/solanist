@@ -38,6 +38,8 @@ export type AppIconName =
   | 'arrow-left'
   | 'pause'
   | 'edit'
+  | 'list'
+  | 'grid'
   | 'trash';
 
 const ICONS: Record<AppIconName, string> = {
@@ -78,6 +80,8 @@ const ICONS: Record<AppIconName, string> = {
   'arrow-left': 'M19 12H5M12 19l-7-7 7-7',
   pause: 'M10 5v14M14 5v14',
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  grid: 'M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z',
   trash: 'M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0h10m-9 4v8a1 1 0 001 1h6a1 1 0 001-1v-8',
 };
 

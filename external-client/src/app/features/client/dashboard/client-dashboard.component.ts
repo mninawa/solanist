@@ -7,19 +7,25 @@ import {
   ClientDashboard,
   CleaningReportSummary,
   PropertySummary,
+  SubscriptionPortfolio,
 } from '../../../core/models/client.models';
 import { daysUntilDate } from '../../../core/utils/booking-calendar.util';
 import { APP_CONFIG } from '../../../core/config/app-config';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
-import { ClientBookingRescheduleComponent } from '../bookings/client-booking-reschedule.component';
+import { ClientAssignPlanDrawerComponent } from '../assign-plan/client-assign-plan-drawer.component';
+import { fallbackPropertyImage } from '../../../core/util/property-image';
 
-const EXPECT_CHECKLIST = [
-  'Technician arrives within your time window',
-  'Visual inspection before cleaning begins',
-  'Before & after photos taken',
-  'Cleaning report sent after completion',
-];
+type PortfolioView = 'grid' | 'list';
+const VIEW_KEY = 'solanist:dashboard-view';
+
+interface BillingLine {
+  propertyId: string;
+  name: string;
+  planName: string;
+  amount: number;
+  due: string | null;
+}
 
 @Component({
   selector: 'app-client-dashboard',
@@ -31,7 +37,7 @@ const EXPECT_CHECKLIST = [
     UpperCasePipe,
     LoadingStateComponent,
     AppIconComponent,
-    ClientBookingRescheduleComponent,
+    ClientAssignPlanDrawerComponent,
   ],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss',
@@ -39,37 +45,77 @@ const EXPECT_CHECKLIST = [
 export class ClientDashboardComponent implements OnInit {
   private readonly clientService = inject(ClientService);
   readonly config = APP_CONFIG;
-  readonly expectChecklist = EXPECT_CHECKLIST;
 
   dashboard = signal<ClientDashboard | null>(null);
   properties = signal<PropertySummary[]>([]);
   bookings = signal<Booking[]>([]);
   recentReports = signal<CleaningReportSummary[]>([]);
+  portfolio = signal<SubscriptionPortfolio | null>(null);
   loading = signal(true);
-  selectedPropertyId = signal<string | null>(null);
-  rescheduleBookingId = signal<string | null>(null);
   imageErrors = signal<Set<string>>(new Set());
 
-  selectedProperty = computed(() => {
-    const id = this.selectedPropertyId();
-    return this.properties().find((p) => p.id === id) ?? this.properties()[0] ?? null;
+  /** 'all' shows the whole portfolio, otherwise a single property id. */
+  viewFilter = signal<string>('all');
+  portfolioView = signal<PortfolioView>(this.readStoredView());
+  assignPlanProperty = signal<PropertySummary | null>(null);
+
+  filteredProperties = computed(() => {
+    const filter = this.viewFilter();
+    const all = this.properties();
+    return filter === 'all' ? all : all.filter((p) => p.id === filter);
   });
 
-  upcomingBooking = computed(() => {
-    const prop = this.selectedProperty();
-    if (!prop) return null;
-    return (
-      this.bookings()
-        .filter((b) => b.status === 'upcoming' && b.propertyId === prop.id)
-        .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-    );
+  totalProperties = computed(() => this.filteredProperties().length);
+
+  activeSubscriptions = computed(
+    () =>
+      this.filteredProperties().filter(
+        (p) => p.subscriptionStatus === 'active' && p.planName,
+      ).length,
+  );
+
+  allActive = computed(
+    () => this.totalProperties() > 0 && this.activeSubscriptions() === this.totalProperties(),
+  );
+
+  nextCleanProperty = computed(() => {
+    const withDates = this.filteredProperties()
+      .filter((p) => p.nextCleanDate)
+      .sort((a, b) => (a.nextCleanDate! < b.nextCleanDate! ? -1 : 1));
+    return withDates[0] ?? null;
   });
 
-  visitsUsed = computed(() => {
-    const prop = this.selectedProperty();
-    if (!prop?.visitsPerYear || prop.visitsRemaining === undefined) return 0;
-    return prop.visitsPerYear - prop.visitsRemaining;
+  upcomingBookings = computed(() => {
+    const filter = this.viewFilter();
+    return this.bookings()
+      .filter((b) => b.status === 'upcoming')
+      .filter((b) => filter === 'all' || b.propertyId === filter)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 4);
   });
+
+  billingLines = computed<BillingLine[]>(() => {
+    const portfolio = this.portfolio();
+    const filter = this.viewFilter();
+    const props = this.properties();
+    const preview = portfolio?.invoicePreview ?? [];
+    return preview
+      .filter((item) => filter === 'all' || item.propertyId === filter)
+      .map((item) => {
+        const prop = props.find((p) => p.id === item.propertyId);
+        return {
+          propertyId: item.propertyId,
+          name: item.propertyName,
+          planName: item.planName,
+          amount: item.amount,
+          due: prop?.nextCleanDate ?? portfolio?.nextBillingDate ?? null,
+        };
+      });
+  });
+
+  combinedBillingTotal = computed(() =>
+    this.billingLines().reduce((sum, line) => sum + line.amount, 0),
+  );
 
   ngOnInit(): void {
     this.clientService.getDashboard().subscribe({
@@ -77,13 +123,10 @@ export class ClientDashboardComponent implements OnInit {
         this.dashboard.set(data);
         this.loading.set(false);
       },
+      error: () => this.loading.set(false),
     });
     this.clientService.getProperties().subscribe({
-      next: (props) => {
-        this.properties.set(props);
-        const primary = props.find((p) => p.isPrimary) ?? props[0];
-        if (primary) this.selectedPropertyId.set(primary.id);
-      },
+      next: (props) => this.properties.set(props),
     });
     this.clientService.getBookings().subscribe({
       next: (bookings) => this.bookings.set(bookings),
@@ -91,24 +134,59 @@ export class ClientDashboardComponent implements OnInit {
     this.clientService.getReports().subscribe({
       next: (reports) => this.recentReports.set(reports.slice(0, 3)),
     });
+    this.clientService.getSubscriptionPortfolio().subscribe({
+      next: ({ portfolio }) => this.portfolio.set(portfolio),
+    });
   }
 
-  selectProperty(id: string): void {
-    this.selectedPropertyId.set(id);
+  setFilter(value: string): void {
+    this.viewFilter.set(value || 'all');
   }
 
-  openReschedule(): void {
-    const booking = this.upcomingBooking();
-    if (booking) this.rescheduleBookingId.set(booking.id);
+  setView(view: PortfolioView): void {
+    this.portfolioView.set(view);
+    try {
+      localStorage.setItem(VIEW_KEY, view);
+    } catch {
+      /* storage unavailable — keep in-memory only */
+    }
   }
 
-  closeReschedule(): void {
-    this.rescheduleBookingId.set(null);
+  openAssignPlan(prop: PropertySummary): void {
+    this.assignPlanProperty.set(prop);
   }
 
-  onRescheduled(booking: Booking): void {
-    this.bookings.update((list) => list.map((b) => (b.id === booking.id ? booking : b)));
-    this.closeReschedule();
+  closeAssignPlan(): void {
+    this.assignPlanProperty.set(null);
+  }
+
+  onPlanAssigned(): void {
+    this.closeAssignPlan();
+    this.clientService.getProperties().subscribe({
+      next: (props) => this.properties.set(props),
+    });
+    this.clientService.getSubscriptionPortfolio().subscribe({
+      next: ({ portfolio }) => this.portfolio.set(portfolio),
+    });
+  }
+
+  needsPlan(prop: PropertySummary): boolean {
+    return prop.subscriptionStatus !== 'active' || !prop.planName;
+  }
+
+  displayImage(prop: PropertySummary): string {
+    if (prop.imageUrl && !this.imageErrors().has(prop.id)) return prop.imageUrl;
+    return fallbackPropertyImage(prop.id);
+  }
+
+  onImageError(id: string): void {
+    this.imageErrors.update((set) => new Set(set).add(id));
+  }
+
+  planBadgeClass(variant?: string): string {
+    if (variant === 'purple') return 'badge-plan-purple';
+    if (variant === 'blue') return 'badge-plan-blue';
+    return 'badge-plan-neutral';
   }
 
   formatPanelCount(count: number): string {
@@ -119,11 +197,11 @@ export class ClientDashboardComponent implements OnInit {
     return daysUntilDate(date);
   }
 
-  onImageError(id: string): void {
-    this.imageErrors.update((set) => new Set(set).add(id));
-  }
-
-  hasImageError(id: string): boolean {
-    return this.imageErrors().has(id);
+  private readStoredView(): PortfolioView {
+    try {
+      return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
+    } catch {
+      return 'grid';
+    }
   }
 }
