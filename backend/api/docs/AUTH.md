@@ -15,8 +15,8 @@ All users sign in with Google. Password login, signup, reset, and change-passwor
 1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
 2. Create an **OAuth 2.0 Client ID** (type: **Web application**)
 3. Authorized JavaScript origins:
-   - `http://localhost:8080` (local Docker)
-   - `https://your-app.onrender.com` (production)
+   - `http://localhost:8080` (local Docker only)
+   - `https://solanist-app.onrender.com` (production)
 4. Set env var on BFF:
 
 ```bash

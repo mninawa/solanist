@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Solanist.Infrastructure;
 using Solanist.Infrastructure.Options;
@@ -43,6 +44,19 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsProduction())
+{
+    var liveAuth = app.Services.GetRequiredService<IOptions<AuthOptions>>().Value;
+    if (liveAuth.AppBaseUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase) ||
+        liveAuth.AppBaseUrl.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase))
+    {
+        app.Logger.LogWarning(
+            "Auth__AppBaseUrl is {AppBaseUrl}. Invite and reset links will use localhost. " +
+            "Set Auth__AppBaseUrl to your public app URL (Render: link to solanist-app RENDER_EXTERNAL_URL).",
+            liveAuth.AppBaseUrl);
+    }
+}
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {

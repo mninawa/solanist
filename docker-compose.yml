@@ -20,7 +20,7 @@ services:
       Paystack__SecretKey: ${PAYSTACK_SECRET_KEY:-}
       Paystack__PublicKey: ${PAYSTACK_PUBLIC_KEY:-}
       Paystack__CallbackUrl: ${PAYSTACK_CALLBACK_URL:-}
-      Paystack__Plans__Quarterly Solar Care: ${PAYSTACK_PLAN_QUARTERLY:-}
+      Paystack__Plans__plan-quarterly: ${PAYSTACK_PLAN_QUARTERLY:-}
       Auth__AppBaseUrl: ${AUTH_APP_BASE_URL:-http://localhost:8080}
       Auth__ExposeResetLinks: ${AUTH_EXPOSE_RESET_LINKS:-true}
       Auth__GoogleClientId: ${AUTH_GOOGLE_CLIENT_ID:-}

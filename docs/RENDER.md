@@ -33,11 +33,15 @@ No deploy hooks or extra secrets are required if Render is linked to GitHub. Che
 4. When prompted, set **`Mongo__ConnectionString`** on `solanist-bff` to your Atlas URI.
 5. Set production secrets on `solanist-bff` (Dashboard → Environment):
    - `Auth__GoogleClientId`
-   - `Paystack__*` (if using billing)
+   - `Paystack__*` (if using billing) — callback URL auto-sets from `Auth__AppBaseUrl` when unset/localhost
    - `S3__*` / `Email__*` / `WhatsApp__ApiKey` as needed
 6. In **MongoDB Atlas** → Network Access → allow **`0.0.0.0/0`** (or Render egress IPs).
 
-After first deploy, add your Render app URL to Google OAuth authorized origins (see [AUTH.md](../backend/api/docs/AUTH.md)).
+After first deploy:
+
+7. **Google OAuth** → Authorized JavaScript origins must include **`https://solanist-app.onrender.com`** (not localhost).
+8. On `solanist-bff`, confirm **`Auth__AppBaseUrl`** = `https://solanist-app.onrender.com` (blueprint links this automatically).
+9. Optional: set **`Auth__AllowSelfSignup`** = `true` on Render if you want the public “Create an account” flow (local `.env` default; blueprint sets `false`).
 
 ## URLs after deploy
 

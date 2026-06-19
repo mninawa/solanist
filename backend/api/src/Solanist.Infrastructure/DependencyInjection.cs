@@ -84,6 +84,10 @@ public static class DependencyInjection
                 options.Plans["plan-quarterly"] = quarterly;
                 options.Plans["plan-plus"] = quarterly;
             }
+
+            var auth = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>();
+            if (auth is not null)
+                ApplyPublicAppUrls(options, auth);
         });
         var paystackOptions = configuration.GetSection(PaystackOptions.SectionName).Get<PaystackOptions>() ?? new PaystackOptions();
         var mongoConnection = mongoSection.Get<MongoOptions>()?.ConnectionString;
@@ -129,4 +133,19 @@ public static class DependencyInjection
 
         return services;
     }
+
+    /// <summary>
+    /// When Paystack callback is unset or still points at localhost, derive it from the public app URL
+    /// (Auth__AppBaseUrl / Render blueprint link to solanist-app).
+    /// </summary>
+    private static void ApplyPublicAppUrls(PaystackOptions paystack, AuthOptions auth)
+    {
+        if (IsLocalOrMissingUrl(paystack.CallbackUrl) && !IsLocalOrMissingUrl(auth.AppBaseUrl))
+            paystack.CallbackUrl = $"{auth.AppBaseUrl.TrimEnd('/')}/client/subscription";
+    }
+
+    private static bool IsLocalOrMissingUrl(string? url) =>
+        string.IsNullOrWhiteSpace(url) ||
+        url.Contains("localhost", StringComparison.OrdinalIgnoreCase) ||
+        url.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase);
 }
