@@ -143,6 +143,16 @@ internal sealed class PaystackBillingService(
         return (amountOnlyInit, amountOnlyError, null);
     }
 
+    private async Task ApplyPlanFieldsToPropertyAsync(PropertyDocument property, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(property.PlanName)) return;
+        var plans = await servicePlans.GetAdminPlansAsync(ct);
+        var plan = plans.FirstOrDefault(
+            pl => string.Equals(pl.Name, property.PlanName, StringComparison.OrdinalIgnoreCase));
+        if (plan is not null)
+            Persistence.ServicePlanMappers.ApplyPlanFields(property, plan);
+    }
+
     private async Task<decimal?> ResolveCatalogPricePerVisitAsync(string? planKey, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(planKey)) return null;
@@ -404,6 +414,7 @@ internal sealed class PaystackBillingService(
                 property.SubscriptionStatus = "active";
                 if (string.IsNullOrWhiteSpace(property.PlanName) && !string.IsNullOrWhiteSpace(planName))
                     property.PlanName = planName;
+                await ApplyPlanFieldsToPropertyAsync(property, ct);
                 await Properties.ReplaceOneAsync(p => p.Id == property.Id, property, cancellationToken: ct);
                 logger.LogInformation(
                     "Activated property {PropertyId} for customer {CustomerId} from Paystack charge {Reference}.",

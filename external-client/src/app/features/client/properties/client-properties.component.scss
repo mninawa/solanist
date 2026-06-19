@@ -778,6 +778,12 @@
   white-space: nowrap;
 }
 
+.billing-unit {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
 .view-all-link {
   display: inline-flex;
   align-items: center;

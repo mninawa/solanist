@@ -16,19 +16,22 @@ public sealed class MongoClientService : IClientService
     private readonly ILogger<MongoClientService> _logger;
     private readonly AuthOptions _auth;
     private readonly IPaystackBillingService _paystack;
+    private readonly IServicePlanCatalog _servicePlans;
 
     public MongoClientService(
         IMongoDatabase db,
         ICurrentUser currentUser,
         ILogger<MongoClientService> logger,
         IOptions<AuthOptions> authOptions,
-        IPaystackBillingService paystack)
+        IPaystackBillingService paystack,
+        IServicePlanCatalog servicePlans)
     {
         _db = db;
         _currentUser = currentUser;
         _logger = logger;
         _auth = authOptions.Value;
         _paystack = paystack;
+        _servicePlans = servicePlans;
     }
 
     private string CustomerId => _currentUser.RequireCustomerId();
@@ -203,6 +206,7 @@ public sealed class MongoClientService : IClientService
     {
         var customer = await GetCustomerAsync(ct);
         var properties = await GetPropertyDocsAsync(ct);
+        await EnrichPlanFieldsAsync(properties, ct);
         var subscription = await GetSubscriptionDocAsync(ct);
         var payments = await GetPaymentDocsAsync(ct);
 
@@ -243,6 +247,7 @@ public sealed class MongoClientService : IClientService
     public async Task<IReadOnlyList<PropertySummaryDto>> GetPropertiesAsync(CancellationToken ct = default)
     {
         var docs = await GetPropertyDocsAsync(ct);
+        await EnrichPlanFieldsAsync(docs, ct);
         return docs.Select(MongoMappers.ToPropertyDto).ToList();
     }
 
@@ -512,6 +517,36 @@ public sealed class MongoClientService : IClientService
 
     private async Task<List<PropertyDocument>> GetPropertyDocsAsync(CancellationToken ct) =>
         await Properties.Find(p => p.CustomerId == CustomerId).ToListAsync(ct);
+
+    /// <summary>
+    /// Backfills plan-derived fields (frequency, price, monthly billing) for active properties that
+    /// were activated via Paystack before those fields were captured, so the subscription table and
+    /// billing summary never render empty cells. Persists the fill so it only happens once.
+    /// </summary>
+    private async Task EnrichPlanFieldsAsync(List<PropertyDocument> properties, CancellationToken ct)
+    {
+        var pending = properties
+            .Where(p => p.SubscriptionStatus == "active"
+                && !string.IsNullOrWhiteSpace(p.PlanName)
+                && (string.IsNullOrWhiteSpace(p.PlanFrequency)
+                    || (p.PricePerClean ?? 0m) <= 0m
+                    || p.MonthlyBilling is null))
+            .ToList();
+        if (pending.Count == 0) return;
+
+        var plans = await _servicePlans.GetAdminPlansAsync(ct);
+        if (plans.Count == 0) return;
+
+        foreach (var property in pending)
+        {
+            var plan = plans.FirstOrDefault(
+                pl => string.Equals(pl.Name, property.PlanName, StringComparison.OrdinalIgnoreCase));
+            if (plan is null) continue;
+
+            if (ServicePlanMappers.ApplyPlanFields(property, plan))
+                await Properties.ReplaceOneAsync(d => d.Id == property.Id, property, cancellationToken: ct);
+        }
+    }
 
     private async Task<List<BookingDocument>> GetBookingDocsAsync(CancellationToken ct) =>
         await Bookings.Find(b => b.CustomerId == CustomerId).ToListAsync(ct);

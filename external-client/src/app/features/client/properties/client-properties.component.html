@@ -483,7 +483,7 @@
                         </div>
                       </td>
                       <td data-label="Plan">{{ prop.planName ?? '—' }}</td>
-                      <td data-label="Frequency">{{ prop.planFrequency ?? '—' }}</td>
+                      <td data-label="Frequency">{{ prop.planFrequency || (prop.planName ? '—' : 'No plan') }}</td>
                       <td data-label="Next Clean">
                         @if (prop.nextCleanDate) {
                           {{ prop.nextCleanDate | date: 'd MMM yyyy' }}
@@ -494,6 +494,9 @@
                       <td data-label="Billing">
                         @if (prop.monthlyBilling) {
                           {{ prop.monthlyBilling | currency: 'ZAR':'symbol-narrow':'1.0-0' }}/mo
+                        } @else if (prop.pricePerClean) {
+                          {{ prop.pricePerClean | currency: 'ZAR':'symbol-narrow':'1.0-0' }}
+                          <span class="billing-unit">{{ (prop.visitsPerYear ?? 0) <= 1 ? 'once-off' : 'per clean' }}</span>
                         } @else {
                           —
                         }
