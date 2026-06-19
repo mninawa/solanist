@@ -68,8 +68,9 @@ internal sealed class PaystackBillingService(
         var planCode = NormalizePaystackPlanCode(
             await servicePlans.ResolvePaystackPlanCodeAsync(planName, ct)
             ?? _options.ResolvePlanCode(planName));
-        var amountCents = ResolveAmountCents(subscription, property);
-        var reference = $"sol-{customerId}-{Guid.NewGuid():N}"[..40];
+        var catalogPrice = await ResolveCatalogPricePerVisitAsync(planName, ct);
+        var amountCents = ResolveAmountCents(subscription, property, catalogPrice);
+        var reference = BuildPaystackReference(customerId);
 
         var metadata = new Dictionary<string, string>
         {
@@ -78,7 +79,9 @@ internal sealed class PaystackBillingService(
             ["plan_name"] = planName ?? "",
         };
 
-        var (init, error) = await api.InitializeTransactionAsync(email, amountCents, reference, planCode, metadata, ct);
+        var (init, error, usedPlanCode) = await InitializeWithPlanFallbackAsync(
+            email, amountCents, reference, planCode, metadata, customerId, ct);
+
         if (init?.AccessCode is null || init.Reference is null)
         {
             var detail = string.IsNullOrWhiteSpace(error) ? "unknown" : error.Trim();
@@ -86,13 +89,71 @@ internal sealed class PaystackBillingService(
                 "Paystack initialize failed for customer {CustomerId}: {Detail} (plan={PlanCode}, amountCents={AmountCents})",
                 customerId,
                 detail,
-                planCode ?? "amount-only",
-                planCode is null ? amountCents : 0);
+                usedPlanCode ?? "amount-only",
+                usedPlanCode is null ? amountCents : 0);
             throw new InvalidOperationException($"paystack_initialize_failed: {detail}");
         }
 
-        return new PaystackInitializeResponseDto(init.AccessCode, init.Reference, _options.PublicKey, planCode);
+        return new PaystackInitializeResponseDto(init.AccessCode, init.Reference, _options.PublicKey, usedPlanCode);
     }
+
+    private async Task<(PaystackInitializeData? Init, string? Error, string? UsedPlanCode)> InitializeWithPlanFallbackAsync(
+        string email,
+        int amountCents,
+        string reference,
+        string? planCode,
+        Dictionary<string, string> metadata,
+        string customerId,
+        CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(planCode))
+        {
+            var (init, error) = await api.InitializeTransactionAsync(
+                email, amountCents, reference, planCode, metadata, ct);
+            if (init?.AccessCode is not null && init.Reference is not null)
+                return (init, null, planCode);
+
+            if (IsInvalidPlanError(error))
+            {
+                logger.LogWarning(
+                    "Paystack rejected plan {PlanCode} for customer {CustomerId}: {Error}. Retrying amount-only.",
+                    planCode,
+                    customerId,
+                    error);
+                var retryReference = BuildPaystackReference(customerId);
+                var (retryInit, retryError) = await api.InitializeTransactionAsync(
+                    email, amountCents, retryReference, null, metadata, ct);
+                return (retryInit, retryError, null);
+            }
+
+            return (init, error, planCode);
+        }
+
+        var (amountOnlyInit, amountOnlyError) = await api.InitializeTransactionAsync(
+            email, amountCents, reference, null, metadata, ct);
+        return (amountOnlyInit, amountOnlyError, null);
+    }
+
+    private async Task<decimal?> ResolveCatalogPricePerVisitAsync(string? planKey, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(planKey)) return null;
+        var catalog = await servicePlans.GetActiveCatalogAsync(ct);
+        var plan = catalog.FirstOrDefault(p => p.Id == planKey || p.Name == planKey);
+        return plan is { PricePerVisit: > 0 } ? plan.PricePerVisit : null;
+    }
+
+    private static string BuildPaystackReference(string customerId)
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var raw = $"sol{customerId.Replace("-", "", StringComparison.Ordinal)}{suffix}";
+        var allowed = raw.Where(c => char.IsLetterOrDigit(c) || c is '-' or '.' or '=').ToArray();
+        var reference = new string(allowed);
+        return reference.Length <= 40 ? reference : reference[..40];
+    }
+
+    private static bool IsInvalidPlanError(string? error) =>
+        !string.IsNullOrWhiteSpace(error) &&
+        error.Contains("plan", StringComparison.OrdinalIgnoreCase);
 
     public async Task<PaystackVerifyResponseDto> VerifyTransactionAsync(
         string customerId,
@@ -397,13 +458,17 @@ internal sealed class PaystackBillingService(
         return trimmed.StartsWith("PLN_", StringComparison.OrdinalIgnoreCase) ? trimmed : null;
     }
 
-    private static int ResolveAmountCents(SubscriptionDocument subscription, PropertyDocument? property)
+    private static int ResolveAmountCents(
+        SubscriptionDocument subscription,
+        PropertyDocument? property,
+        decimal? catalogPricePerVisit = null)
     {
-        var amount = property?.PricePerClean ?? subscription.PricePerVisit;
+        var amount = property?.PricePerClean ?? catalogPricePerVisit ?? subscription.PricePerVisit;
         if (amount <= 0)
             amount = subscription.AnnualPrice > 0 ? subscription.AnnualPrice / 4 : 499;
 
-        return (int)Math.Round(amount * 100, MidpointRounding.AwayFromZero);
+        var cents = (int)Math.Round(amount * 100, MidpointRounding.AwayFromZero);
+        return cents < 100 ? 49900 : cents;
     }
 
     private static string FormatPaymentMethod(PaystackAuthorizationData? auth)

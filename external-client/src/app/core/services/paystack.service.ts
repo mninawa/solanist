@@ -18,7 +18,7 @@ function paystackErrorMessage(err: unknown): string {
         if (/invalid key|authorization/i.test(detail))
           return 'Paystack API keys are invalid — check Render env vars for the BFF service.';
         if (/plan/i.test(detail))
-          return 'Paystack plan is not configured — link a plan in Admin Settings or set Paystack__Plans__plan-quarterly.';
+          return 'Paystack plan is invalid or missing — checkout will use a one-time charge. Link a valid PLN_ code in Admin Settings.';
         return detail || 'Paystack could not start checkout.';
       }
       if (apiMessage === 'customer_not_linked')

@@ -75,7 +75,7 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning("Paystack GET {Path} failed: {Status} {Body}", path, response.StatusCode, json);
-            return (default, $"Paystack HTTP {(int)response.StatusCode}");
+            return (default, ParseHttpError(response.StatusCode, json));
         }
 
         return UnwrapEnvelope<T>(path, json);
@@ -90,10 +90,30 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning("Paystack POST {Path} failed: {Status} {Body}", path, response.StatusCode, json);
-            return (default, $"Paystack HTTP {(int)response.StatusCode}");
+            return (default, ParseHttpError(response.StatusCode, json));
         }
 
         return UnwrapEnvelope<T>(path, json);
+    }
+
+    private static string ParseHttpError(System.Net.HttpStatusCode statusCode, string json)
+    {
+        var message = TryParseEnvelopeMessage(json);
+        return message ?? $"Paystack HTTP {(int)statusCode}";
+    }
+
+    private static string? TryParseEnvelopeMessage(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            var envelope = JsonSerializer.Deserialize<PaystackEnvelope<JsonElement>>(json, JsonOptions);
+            return string.IsNullOrWhiteSpace(envelope?.Message) ? null : envelope.Message.Trim();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private (T? Data, string? Error) UnwrapEnvelope<T>(string path, string json)
