@@ -50,6 +50,7 @@ export class ClientAssignPlanDrawerComponent {
   loading = signal(false);
   step = signal(1);
   assignSuccess = signal(false);
+  pendingConfirmation = signal(false);
   checkoutBusy = signal(false);
   checkoutError = signal<string | null>(null);
   paystackEnabled = signal(false);
@@ -104,6 +105,7 @@ export class ClientAssignPlanDrawerComponent {
   reset(): void {
     this.step.set(1);
     this.assignSuccess.set(false);
+    this.pendingConfirmation.set(false);
     this.checkoutBusy.set(false);
     this.checkoutError.set(null);
     this.selectedPlanId.set(null);
@@ -142,9 +144,13 @@ export class ClientAssignPlanDrawerComponent {
 
     this.checkoutBusy.set(true);
     this.checkoutError.set(null);
+    this.pendingConfirmation.set(false);
     this.paystack.checkout(prop.id, plan.name).subscribe({
-      next: () => {
+      next: (result) => {
         this.checkoutBusy.set(false);
+        // Payment went through; `success` reflects whether the server could confirm
+        // and link it immediately. If not, the webhook will finalise it shortly.
+        this.pendingConfirmation.set(!result.success);
         this.assignSuccess.set(true);
         this.scrollDrawerTop();
       },

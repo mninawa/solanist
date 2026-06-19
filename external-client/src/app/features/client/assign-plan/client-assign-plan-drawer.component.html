@@ -57,11 +57,17 @@
             <div class="success-icon-ring">
               <app-icon name="check-circle" [size]="40" />
             </div>
-            <h3>Plan assigned</h3>
+            <h3>{{ pendingConfirmation() ? 'Payment received' : 'Plan assigned' }}</h3>
             <p class="success-subtitle">
               @if (selectedPlan(); as plan) {
-                <strong>{{ plan.name }}</strong> is now active for
-                <strong>{{ property()?.address }}</strong>. We'll confirm your first clean shortly.
+                @if (pendingConfirmation()) {
+                  We've received your payment for <strong>{{ plan.name }}</strong>. It can take a
+                  moment to activate <strong>{{ property()?.address }}</strong> — refresh in a
+                  minute if it's still pending.
+                } @else {
+                  <strong>{{ plan.name }}</strong> is now active for
+                  <strong>{{ property()?.address }}</strong>. We'll confirm your first clean shortly.
+                }
               }
             </p>
             <ul class="success-benefits">

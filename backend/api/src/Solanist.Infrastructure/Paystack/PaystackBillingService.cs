@@ -170,12 +170,49 @@ internal sealed class PaystackBillingService(
         string reference,
         CancellationToken ct = default)
     {
-        var verified = await api.VerifyTransactionAsync(reference, ct);
-        if (verified is null || !string.Equals(verified.Status, "success", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(reference))
+        {
+            logger.LogWarning("Paystack verify called with empty reference for customer {CustomerId}.", customerId);
             return new PaystackVerifyResponseDto(false);
+        }
+
+        // The frontend popup's onSuccess can fire a beat before Paystack finalises the
+        // charge, so a single verify can come back "pending"/"ongoing". Retry briefly.
+        PaystackVerifyData? verified = null;
+        for (var attempt = 1; attempt <= 4; attempt++)
+        {
+            verified = await api.VerifyTransactionAsync(reference, ct);
+            if (verified is not null && string.Equals(verified.Status, "success", StringComparison.OrdinalIgnoreCase))
+                break;
+
+            logger.LogInformation(
+                "Paystack verify attempt {Attempt}/4 for {Reference} (customer {CustomerId}) returned status '{Status}'.",
+                attempt,
+                reference,
+                customerId,
+                verified?.Status ?? "null");
+
+            if (attempt < 4)
+                await Task.Delay(TimeSpan.FromSeconds(attempt), ct);
+        }
+
+        if (verified is null || !string.Equals(verified.Status, "success", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning(
+                "Paystack verify gave up for {Reference} (customer {CustomerId}) — last status '{Status}'.",
+                reference,
+                customerId,
+                verified?.Status ?? "null");
+            return new PaystackVerifyResponseDto(false);
+        }
 
         await ApplySuccessfulChargeAsync(customerId, verified, ct);
         var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        logger.LogInformation(
+            "Paystack verify linked {Reference} for customer {CustomerId} (subscription status '{Status}').",
+            reference,
+            customerId,
+            subscription?.Status ?? "unknown");
         return new PaystackVerifyResponseDto(
             true,
             subscription?.PaymentMethod,
@@ -317,26 +354,36 @@ internal sealed class PaystackBillingService(
     {
         var customer = await Customers.Find(c => c.Id == customerId).FirstOrDefaultAsync(ct);
         var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
-        if (subscription is null) return;
 
-        if (charge.Customer?.CustomerCode is not null)
+        if (charge.Customer?.CustomerCode is not null && customer is not null)
         {
-            if (customer is not null)
-            {
-                customer.PaystackCustomerCode = charge.Customer.CustomerCode;
-                await Customers.ReplaceOneAsync(c => c.Id == customer.Id, customer, cancellationToken: ct);
-            }
+            customer.PaystackCustomerCode = charge.Customer.CustomerCode;
+            await Customers.ReplaceOneAsync(c => c.Id == customer.Id, customer, cancellationToken: ct);
         }
 
-        subscription.PaymentProvider = "paystack";
-        subscription.Status = "active";
-        subscription.PaymentMethod = FormatPaymentMethod(charge.Authorization);
-        if (charge.Plan?.PlanCode is not null)
-            subscription.PaystackPlanCode = charge.Plan.PlanCode;
+        var planName = charge.Plan?.Name
+            ?? ExtractMetadata(charge.Metadata, "plan_name")
+            ?? subscription?.PlanName;
 
-        var nextBilling = DateTime.UtcNow.AddMonths(3);
-        subscription.NextBillingDate = nextBilling.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+        if (subscription is not null)
+        {
+            subscription.PaymentProvider = "paystack";
+            subscription.Status = "active";
+            subscription.PaymentMethod = FormatPaymentMethod(charge.Authorization);
+            if (charge.Plan?.PlanCode is not null)
+                subscription.PaystackPlanCode = charge.Plan.PlanCode;
+
+            var nextBilling = DateTime.UtcNow.AddMonths(3);
+            subscription.NextBillingDate = nextBilling.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+        }
+        else
+        {
+            logger.LogWarning(
+                "Paystack charge {Reference} succeeded for customer {CustomerId} but no subscription document was found.",
+                charge.Reference,
+                customerId);
+        }
 
         var propertyId = ExtractMetadata(charge.Metadata, "property_id");
         if (!string.IsNullOrWhiteSpace(propertyId))
@@ -347,9 +394,22 @@ internal sealed class PaystackBillingService(
             if (property is not null)
             {
                 property.SubscriptionStatus = "active";
-                if (string.IsNullOrWhiteSpace(property.PlanName))
-                    property.PlanName = subscription.PlanName;
+                if (string.IsNullOrWhiteSpace(property.PlanName) && !string.IsNullOrWhiteSpace(planName))
+                    property.PlanName = planName;
                 await Properties.ReplaceOneAsync(p => p.Id == property.Id, property, cancellationToken: ct);
+                logger.LogInformation(
+                    "Activated property {PropertyId} for customer {CustomerId} from Paystack charge {Reference}.",
+                    propertyId,
+                    customerId,
+                    charge.Reference);
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Paystack charge {Reference} referenced property {PropertyId} for customer {CustomerId} but it was not found.",
+                    charge.Reference,
+                    propertyId,
+                    customerId);
             }
         }
         else
@@ -369,13 +429,13 @@ internal sealed class PaystackBillingService(
             var exists = await Payments.Find(p => p.PaystackReference == charge.Reference).AnyAsync(ct);
             if (!exists)
             {
-                var amount = charge.Amount > 0 ? charge.Amount / 100m : subscription.PricePerVisit;
+                var amount = charge.Amount > 0 ? charge.Amount / 100m : subscription?.PricePerVisit ?? 0;
                 await Payments.InsertOneAsync(new PaymentDocument
                 {
                     Id = $"pay-{Guid.NewGuid():N}"[..12],
                     CustomerId = customerId,
                     Date = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    Description = charge.Plan?.Name ?? subscription.PlanName,
+                    Description = charge.Plan?.Name ?? planName ?? subscription?.PlanName ?? "Paystack payment",
                     Amount = amount,
                     Status = "paid",
                     PaystackReference = charge.Reference,
