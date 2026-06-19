@@ -130,6 +130,15 @@ public sealed class MockClientService : IClientService
         return Task.FromResult<PropertyDetailDto?>(detail);
     }
 
+    public Task<PropertyDetailDto?> SeedDemoCleaningsAsync(string propertyId, CancellationToken ct = default)
+    {
+        // Mock layer: just flip the report flag so the existing mock report becomes visible.
+        if (_properties.All(p => p.Id != propertyId))
+            return Task.FromResult<PropertyDetailDto?>(null);
+        _reportAvailable = true;
+        return GetPropertyDetailAsync(propertyId, ct);
+    }
+
     public Task<PropertySummaryDto> AddPropertyAsync(CreatePropertyRequest request, CancellationToken ct = default)
     {
         var property = new PropertySummaryDto(

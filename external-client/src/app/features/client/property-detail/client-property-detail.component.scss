@@ -578,6 +578,20 @@
   color: #b45309;
 }
 
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  margin-top: var(--spacing-md);
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
 // Reports
 .report-cards {
   display: grid;

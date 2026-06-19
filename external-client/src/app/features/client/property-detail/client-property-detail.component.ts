@@ -44,6 +44,7 @@ export class ClientPropertyDetailComponent implements OnInit {
   activeTab = signal<DetailTab>('overview');
   assignDrawerOpen = signal(false);
   bookCleanOpen = signal(false);
+  seedingDemo = signal(false);
 
   // Inline plan-management state
   paystackEnabled = signal(false);
@@ -149,6 +150,23 @@ export class ClientPropertyDetailComponent implements OnInit {
     const prop = this.property();
     if (prop) this.load(prop.id);
     this.flash('success', 'Booking received — we\u2019ll confirm shortly.');
+  }
+
+  seedDemoCleanings(): void {
+    const prop = this.property();
+    if (!prop) return;
+    this.seedingDemo.set(true);
+    this.clientService.seedDemoCleanings(prop.id).subscribe({
+      next: (detail) => {
+        this.seedingDemo.set(false);
+        if (detail) this.detail.set(detail);
+        this.flash('success', 'Demo cleaning history added.');
+      },
+      error: (err: Error) => {
+        this.seedingDemo.set(false);
+        this.flash('error', err.message ?? 'Could not seed demo cleanings.');
+      },
+    });
   }
 
   /* ----- Inline plan management ----- */

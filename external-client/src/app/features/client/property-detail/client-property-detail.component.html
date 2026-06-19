@@ -355,6 +355,20 @@
             title="No cleanings yet"
             message="Once your first clean is booked it will appear here."
           />
+          <div class="empty-actions">
+            <button type="button" class="btn btn-primary btn-sm" (click)="openBookClean()">
+              <app-icon name="plus" [size]="14" />
+              Book first clean
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline btn-sm"
+              [disabled]="seedingDemo()"
+              (click)="seedDemoCleanings()"
+            >
+              {{ seedingDemo() ? 'Adding…' : 'Add sample cleaning history' }}
+            </button>
+          </div>
         } @else {
           <div class="table-wrap">
             <table class="data-table">

@@ -222,6 +222,16 @@ export class ClientService {
     return of(buildPropertyPlanDetails({ ...property })).pipe(delay(300));
   }
 
+  seedDemoCleanings(propertyId: string): Observable<PropertyDetail | null> {
+    if (this.useApi) {
+      return this.api.post<PropertyDetail | null>(
+        `/client/properties/${propertyId}/demo-cleanings`,
+        {},
+      );
+    }
+    return this.getPropertyDetail(propertyId);
+  }
+
   getPropertyDetail(propertyId: string): Observable<PropertyDetail | null> {
     if (this.useApi) {
       return this.api.get<PropertyDetail | null>(`/client/properties/${propertyId}/detail`);

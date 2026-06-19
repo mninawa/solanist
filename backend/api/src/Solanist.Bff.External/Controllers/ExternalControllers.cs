@@ -286,6 +286,16 @@ public sealed class ClientController(IClientService client, IAuthService auth) :
         CancellationToken ct) =>
         OkData(await client.GetPropertyDetailAsync(id, ct));
 
+    /// <summary>
+    /// Seeds demo cleaning history (3 completed bookings + 2 reports) for a property
+    /// that has no cleanings yet. Idempotent: a no-op if the property already has any.
+    /// </summary>
+    [HttpPost("properties/{id}/demo-cleanings")]
+    public async Task<ActionResult<ApiResponse<PropertyDetailDto?>>> SeedDemoCleanings(
+        string id,
+        CancellationToken ct) =>
+        OkData(await client.SeedDemoCleaningsAsync(id, ct));
+
     [HttpGet("profile")]
     public async Task<ActionResult<ApiResponse<ClientProfileDto>>> GetProfile(CancellationToken ct) =>
         OkData(await client.GetProfileAsync(ct));

@@ -327,6 +327,154 @@ public sealed class MongoClientService : IClientService
             propertyReports);
     }
 
+    public async Task<PropertyDetailDto?> SeedDemoCleaningsAsync(string propertyId, CancellationToken ct = default)
+    {
+        var property = await Properties.Find(p => p.Id == propertyId && p.CustomerId == CustomerId)
+            .FirstOrDefaultAsync(ct);
+        if (property is null) return null;
+
+        // Idempotent: if there are already bookings for this property, leave it alone.
+        var existing = await Bookings.Find(b => b.PropertyId == propertyId).AnyAsync(ct);
+        if (existing)
+        {
+            _logger.LogInformation(
+                "SeedDemoCleanings skipped — property {PropertyId} already has cleaning history.", propertyId);
+            return await GetPropertyDetailAsync(propertyId, ct);
+        }
+
+        // Cadence in months derived from visits/year (default quarterly).
+        var visitsPerYear = property.VisitsPerYear ?? 4;
+        var cadenceMonths = visitsPerYear switch
+        {
+            >= 12 => 1,
+            6 => 2,
+            4 => 3,
+            3 => 4,
+            2 => 6,
+            1 => 12,
+            _ => 3,
+        };
+
+        var planName = property.PlanName ?? "Solar Care Plan";
+        var address = $"{property.Address}, {property.City}";
+        var postcode = property.Postcode;
+        var serviceDuration = property.PanelCount switch
+        {
+            >= 20 => "~5 hours",
+            >= 12 => "~4 hours",
+            _ => "~3 hours",
+        };
+
+        var staff = new[] { ("staff-001", "James M."), ("staff-002", "Sipho N.") };
+        var bookingsToInsert = new List<BookingDocument>();
+        var reportsToInsert = new List<ReportDocument>();
+        var today = DateTime.UtcNow.Date;
+
+        // Seed 3 completed cleanings stepping back from today on the property's cadence.
+        for (var i = 1; i <= 3; i++)
+        {
+            var date = today.AddMonths(-cadenceMonths * i);
+            var dateKey = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var bookedOn = date.AddDays(-14).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var (staffId, staffName) = staff[i % staff.Length];
+            var bookingId = $"booking-{Guid.NewGuid():N}"[..14];
+            var bookingRef = $"BKG-{date:yyyyMMdd}-{i:D4}";
+
+            bookingsToInsert.Add(new BookingDocument
+            {
+                Id = bookingId,
+                CustomerId = CustomerId,
+                BookingRef = bookingRef,
+                PropertyId = propertyId,
+                Date = dateKey,
+                TimeSlot = "10:00 AM – 02:00 PM",
+                Status = "completed",
+                ServiceType = "Solar Panel Cleaning",
+                PropertyAddress = address,
+                PropertyPostcode = postcode,
+                PlanName = planName,
+                StaffId = staffId,
+                StaffName = staffName,
+                ConfirmationStatus = "confirmed",
+                BookedOn = bookedOn,
+                ServiceDuration = serviceDuration,
+                PanelCount = property.PanelCount,
+                SystemSizeKw = property.SystemSizeKw,
+                RoofType = property.RoofType,
+                AccessNotes = property.AccessNotes,
+                BillingNote = "subscription",
+            });
+
+            // Generate a report for the two most recent cleanings.
+            if (i <= 2)
+            {
+                var beforeKwh = 11500 + i * 250;
+                var afterKwh = beforeKwh + 200 + i * 30;
+                reportsToInsert.Add(new ReportDocument
+                {
+                    Id = $"report-{Guid.NewGuid():N}"[..14],
+                    CustomerId = CustomerId,
+                    PropertyId = propertyId,
+                    BookingId = bookingId,
+                    CompletedAt = dateKey,
+                    ServiceType = "Solar Panel Cleaning Report",
+                    PanelCount = property.PanelCount,
+                    StaffName = staffName,
+                    PropertyAddress = $"{address}, {postcode}",
+                    PlanName = planName,
+                    SystemSizeKw = property.SystemSizeKw,
+                    RoofType = property.RoofType,
+                    AccessNotes = property.AccessNotes,
+                    PropertyImageUrl = property.ImageUrl,
+                    BeforePhotos =
+                    [
+                        "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1497441173707-f25a2e1d4a65?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&h=520&fit=crop",
+                    ],
+                    AfterPhotos =
+                    [
+                        "https://images.unsplash.com/photo-1613665813447-82a78c468a4d?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1558449455-0aa211637b00?w=800&h=520&fit=crop",
+                        "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=520&fit=crop",
+                    ],
+                    ChecklistSummary =
+                    [
+                        "Panels inspected for damage",
+                        "Debris and bird droppings removed",
+                        "Full rinse and squeegee dry",
+                        "Inverter readings logged",
+                    ],
+                    StaffNotes =
+                        "Moderate dust build-up cleared. No damage detected. "
+                        + $"Recommended next clean in {cadenceMonths} months.",
+                    BeforeKwhReading = beforeKwh,
+                    AfterKwhReading = afterKwh,
+                    KwhGain = afterKwh - beforeKwh,
+                });
+            }
+        }
+
+        if (bookingsToInsert.Count > 0)
+            await Bookings.InsertManyAsync(bookingsToInsert, cancellationToken: ct);
+        if (reportsToInsert.Count > 0)
+            await Reports.InsertManyAsync(reportsToInsert, cancellationToken: ct);
+
+        // Make sure latestReport / reportsPublished surfaces these
+        var customer = await Customers.Find(c => c.Id == CustomerId).FirstOrDefaultAsync(ct);
+        if (customer is not null && !customer.ReportsPublished)
+        {
+            customer.ReportsPublished = true;
+            await Customers.ReplaceOneAsync(c => c.Id == customer.Id, customer, cancellationToken: ct);
+        }
+
+        _logger.LogInformation(
+            "Seeded {BookingCount} demo cleanings and {ReportCount} reports for property {PropertyId}.",
+            bookingsToInsert.Count, reportsToInsert.Count, propertyId);
+
+        return await GetPropertyDetailAsync(propertyId, ct);
+    }
+
     public async Task<PropertySummaryDto> AddPropertyAsync(CreatePropertyRequest request, CancellationToken ct = default)
     {
         var existing = await GetPropertyDocsAsync(ct);
