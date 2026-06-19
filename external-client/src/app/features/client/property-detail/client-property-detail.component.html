@@ -75,10 +75,10 @@
               Assign plan
             </button>
           } @else {
-            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">
+            <button type="button" class="btn btn-primary btn-sm" (click)="changePlan()">
               <app-icon name="subscription" [size]="16" />
-              Manage plan
-            </a>
+              Change plan
+            </button>
           }
           <a routerLink="/client/bookings" class="btn btn-outline btn-sm">
             <app-icon name="calendar" [size]="16" />
@@ -176,9 +176,23 @@
           </dl>
         </section>
 
-        <!-- Subscription -->
-        <section class="card detail-card">
-          <h3 class="section-title">Subscription</h3>
+        <!-- Subscription (inline-managed) -->
+        <section class="card detail-card subscription-card">
+          <div class="section-header">
+            <h3 class="section-title">Subscription</h3>
+            @if (plan()) {
+              <button
+                type="button"
+                class="text-link"
+                [disabled]="busy()"
+                (click)="changePlan()"
+                aria-label="Change plan"
+              >
+                Change plan
+              </button>
+            }
+          </div>
+
           @if (plan(); as p) {
             <dl class="info-grid">
               <dt>Plan</dt>
@@ -205,14 +219,117 @@
                 <dt>Visits remaining</dt>
                 <dd>{{ p.visitsRemaining }} of {{ prop.visitsPerYear }}</dd>
               }
+
+              <dt>Next clean</dt>
+              <dd class="next-clean-cell">
+                @if (editingDate()) {
+                  <div class="inline-edit">
+                    <input
+                      type="date"
+                      class="form-input inline-input"
+                      [min]="today"
+                      [ngModel]="draftDate()"
+                      (ngModelChange)="draftDate.set($event)"
+                    />
+                    <button
+                      type="button"
+                      class="icon-btn icon-btn-success"
+                      aria-label="Save"
+                      [disabled]="savingDate()"
+                      (click)="saveDate()"
+                    >
+                      <app-icon name="check" [size]="16" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      aria-label="Cancel"
+                      [disabled]="savingDate()"
+                      (click)="cancelEditDate()"
+                    >
+                      <app-icon name="close" [size]="16" />
+                    </button>
+                  </div>
+                  @if (prop.nextCleanDate) {
+                    <button type="button" class="text-link text-link-muted" (click)="clearDate()" [disabled]="savingDate()">
+                      Clear date
+                    </button>
+                  }
+                  @if (dateError()) {
+                    <span class="form-error inline-error">{{ dateError() }}</span>
+                  }
+                } @else {
+                  <button type="button" class="next-clean-display" (click)="startEditDate()">
+                    @if (prop.nextCleanDate) {
+                      <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</strong>
+                      @if (prop.nextCleanTimeSlot) {
+                        <span class="muted">{{ prop.nextCleanTimeSlot }}</span>
+                      }
+                    } @else {
+                      <strong class="muted">Not scheduled</strong>
+                    }
+                    <app-icon name="edit" [size]="14" />
+                  </button>
+                }
+              </dd>
+
               <dt>Payment method</dt>
-              <dd>{{ p.paymentMethod }}</dd>
+              <dd class="payment-cell">
+                <span>{{ p.paymentMethod }}</span>
+                @if (paystackEnabled()) {
+                  <button
+                    type="button"
+                    class="text-link"
+                    [disabled]="busy()"
+                    (click)="updatePaymentMethod()"
+                  >
+                    Update
+                  </button>
+                }
+              </dd>
               <dt>Next billing</dt>
               <dd>{{ p.nextBillingDate ? (p.nextBillingDate | date: 'd MMM yyyy') : '—' }}</dd>
             </dl>
-            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-block btn-sm">
-              Manage plan
-            </a>
+
+            @if (message(); as msg) {
+              <p
+                class="status-message"
+                [class.status-message-success]="messageKind() === 'success'"
+                [class.status-message-error]="messageKind() === 'error'"
+              >{{ msg }}</p>
+            }
+
+            @if (planAction() === 'cancel') {
+              <div class="confirm-block">
+                <strong>Cancel this subscription?</strong>
+                <p>Future cleans will stop. You'll keep access to past reports and invoices.</p>
+                <div class="confirm-actions">
+                  <button type="button" class="btn btn-outline btn-sm" [disabled]="busy()" (click)="dismissCancel()">
+                    Keep plan
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" [disabled]="busy()" (click)="confirmCancel()">
+                    {{ busy() ? 'Cancelling…' : 'Cancel subscription' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="manage-actions">
+                <button type="button" class="btn btn-outline btn-sm" [disabled]="busy()" (click)="changePlan()">
+                  <app-icon name="subscription" [size]="14" />
+                  Change plan
+                </button>
+                @if (paystackEnabled()) {
+                  <button type="button" class="btn btn-outline btn-sm" [disabled]="busy()" (click)="updatePaymentMethod()">
+                    <app-icon name="payment" [size]="14" />
+                    Update payment
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm danger-link" [disabled]="busy()" (click)="requestCancel()">
+                    <app-icon name="trash" [size]="14" />
+                    Cancel subscription
+                  </button>
+                }
+              </div>
+            }
           } @else {
             <p class="empty-line">No subscription is attached to this property yet.</p>
             <button type="button" class="btn btn-primary btn-block btn-sm" (click)="openAssignDrawer()">
