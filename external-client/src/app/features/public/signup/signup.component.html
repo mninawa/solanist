@@ -220,7 +220,12 @@
             </div>
             <label class="terms-row">
               <input type="checkbox" [ngModel]="acceptedTerms()" (ngModelChange)="acceptedTerms.set($event)" />
-              <span>I agree to the Terms of Service and privacy policy</span>
+              <span>
+                I agree to the
+                <a routerLink="/legal/terms" target="_blank" rel="noopener">Terms of Service</a>
+                and
+                <a routerLink="/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+              </span>
             </label>
             <p class="field-hint">Your account email will be the Google account you continue with below.</p>
             @if (googleClientId()) {

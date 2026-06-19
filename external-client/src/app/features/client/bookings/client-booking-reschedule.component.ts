@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ClientService } from '../../../core/services/client.service';
 import { Booking } from '../../../core/models/client.models';
 import { BOOKING_TIME_WINDOWS } from '../../../core/content/client-content';
@@ -33,7 +34,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-client-booking-reschedule',
   standalone: true,
-  imports: [FormsModule, DatePipe, AppIconComponent, LoadingStateComponent],
+  imports: [FormsModule, RouterLink, DatePipe, AppIconComponent, LoadingStateComponent],
   templateUrl: './client-booking-reschedule.component.html',
   styleUrl: './client-booking-reschedule.component.scss',
 })

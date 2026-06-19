@@ -136,6 +136,14 @@ import { UserRole } from '../../../core/models/common.models';
           <p class="trust-note">
             <span class="lock">🔒</span> Protected with encrypted Google sign-in
           </p>
+
+          <p class="legal-row">
+            <a routerLink="/legal/terms">Terms of Service</a>
+            <span aria-hidden="true">·</span>
+            <a routerLink="/legal/privacy">Privacy Policy</a>
+            <span aria-hidden="true">·</span>
+            <a routerLink="/legal">All policies</a>
+          </p>
         </div>
       </main>
     </div>
@@ -352,6 +360,27 @@ import { UserRole } from '../../../core/models/common.models';
       color: var(--color-text-muted);
     }
     .lock { margin-right: 4px; }
+
+    .legal-row {
+      margin: var(--spacing-sm) 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+
+      a {
+        color: var(--color-text-secondary);
+        text-decoration: none;
+
+        &:hover {
+          color: var(--color-accent);
+          text-decoration: underline;
+        }
+      }
+    }
 
     @media (max-width: 900px) {
       .auth-layout { grid-template-columns: 1fr; }

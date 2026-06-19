@@ -1,0 +1,86 @@
+<div class="legal-shell">
+  <header class="legal-header">
+    <button type="button" class="legal-back" (click)="goBack()" aria-label="Back">
+      <app-icon name="arrow-left" [size]="18" />
+      <span>Back</span>
+    </button>
+    <a routerLink="/login" class="legal-logo" aria-label="Solanist home">
+      <app-logo size="sm" />
+    </a>
+  </header>
+
+  <main class="legal-main">
+    @if (policy(); as doc) {
+      <article class="legal-doc">
+        <p class="legal-eyebrow">Solanist legal</p>
+        <h1>{{ doc.title }}</h1>
+        <p class="legal-intro">{{ doc.intro }}</p>
+        <p class="legal-meta">Last updated {{ doc.lastUpdated }}</p>
+
+        @for (section of doc.sections; track section.heading) {
+          <section class="legal-section">
+            @if (section.heading) {
+              <h2>{{ section.heading }}</h2>
+            }
+            @if (section.paragraphs?.length) {
+              @for (p of section.paragraphs; track $index) {
+                <p>{{ p }}</p>
+              }
+            }
+            @if (section.bullets?.length) {
+              <ul>
+                @for (b of section.bullets; track $index) {
+                  <li>{{ b }}</li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        <aside class="legal-related">
+          <h3>Other policies</h3>
+          <ul>
+            @for (link of otherPolicies(); track link.slug) {
+              <li>
+                <a [routerLink]="['/legal', link.slug]">
+                  <strong>{{ link.title }}</strong>
+                  <span>{{ link.description }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </aside>
+      </article>
+    } @else {
+      <article class="legal-doc">
+        <p class="legal-eyebrow">Solanist legal</p>
+        <h1>Policies & terms</h1>
+        <p class="legal-intro">
+          The documents below explain how Solanist works, how we keep your data safe, and what
+          happens if you need to move or cancel a visit.
+        </p>
+
+        <ul class="legal-index">
+          @for (link of index; track link.slug) {
+            <li>
+              <a [routerLink]="['/legal', link.slug]">
+                <strong>{{ link.title }}</strong>
+                <span>{{ link.description }}</span>
+                <app-icon name="arrow-right" [size]="16" />
+              </a>
+            </li>
+          }
+        </ul>
+      </article>
+    }
+  </main>
+
+  <footer class="legal-footer">
+    <span>&copy; {{ 2026 }} Solanist · Powered by Felidaen</span>
+    <nav>
+      @for (link of index; track link.slug) {
+        <a [routerLink]="['/legal', link.slug]">{{ link.title }}</a>
+      }
+    </nav>
+  </footer>
+</div>

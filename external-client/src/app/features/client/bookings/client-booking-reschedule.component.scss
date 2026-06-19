@@ -163,6 +163,15 @@
   margin-bottom: var(--spacing-lg);
 
   app-icon { color: var(--color-info); flex-shrink: 0; margin-top: 1px; }
+
+  .policy-link {
+    margin-left: 4px;
+    color: var(--color-accent);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
 }
 
 .reschedule-grid {

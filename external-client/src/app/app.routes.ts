@@ -54,6 +54,20 @@ export const routes: Routes = [
             (m) => m.ResetPasswordComponent,
           ),
       },
+      {
+        path: 'legal',
+        loadComponent: () =>
+          import('./features/public/legal/legal-policy.component').then(
+            (m) => m.LegalPolicyComponent,
+          ),
+      },
+      {
+        path: 'legal/:slug',
+        loadComponent: () =>
+          import('./features/public/legal/legal-policy.component').then(
+            (m) => m.LegalPolicyComponent,
+          ),
+      },
     ],
   },
   {

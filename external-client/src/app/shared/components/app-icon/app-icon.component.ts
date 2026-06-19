@@ -36,6 +36,7 @@ export type AppIconName =
   | 'star'
   | 'lightbulb'
   | 'arrow-left'
+  | 'arrow-right'
   | 'pause'
   | 'edit'
   | 'list'
@@ -78,6 +79,7 @@ const ICONS: Record<AppIconName, string> = {
   star: 'M12 2l3.1 6.3L22 9.3l-5 4.9 1.2 6.9L12 17.8l-6.2 3.3L7 14.2 2 9.3l6.9-1 3.1-6.3z',
   lightbulb: 'M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z',
   'arrow-left': 'M19 12H5M12 19l-7-7 7-7',
+  'arrow-right': 'M5 12h14M12 5l7 7-7 7',
   pause: 'M10 5v14M14 5v14',
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
