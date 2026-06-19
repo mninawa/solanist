@@ -25,30 +25,13 @@
             </button>
           </div>
 
-          @if (!loading() && property(); as prop) {
-            <div class="property-hero">
-              <img
-                [src]="propertyImage()"
-                [alt]="prop.address"
-                class="property-hero-img"
-                (error)="onImageError()"
-              />
-              <div class="property-hero-body">
-                <span class="property-hero-label">Property</span>
-                <strong>{{ prop.address }}</strong>
-                <span>{{ prop.city }}, {{ prop.postcode }}</span>
-                <span class="property-hero-meta">
-                  {{ prop.panelCount }} panels · {{ prop.systemSizeKw }} kW
-                </span>
-              </div>
-            </div>
-
-            <div class="drawer-steps">
+          @if (!loading()) {
+            <div class="drawer-steps" aria-label="Progress">
               @for (label of stepLabels; track label; let i = $index) {
                 <div
                   class="drawer-step"
                   [class.active]="step() === i + 1"
-                  [class.done]="step() > i + 1 || assignSuccess()"
+                  [class.done]="step() > i + 1"
                 >
                   <span class="drawer-step-num">{{ i + 1 }}</span>
                   <span class="drawer-step-label">{{ label }}</span>
@@ -87,6 +70,23 @@
             </ul>
           </div>
         } @else if (property()) {
+          <div class="property-strip">
+            <img
+              [src]="propertyImage()"
+              [alt]="property()!.address"
+              class="property-strip-img"
+              (error)="onImageError()"
+            />
+            <div class="property-strip-body">
+              <span class="property-strip-label">Property</span>
+              <strong>{{ property()!.address }}</strong>
+              <span class="property-strip-meta">
+                {{ property()!.city }}, {{ property()!.postcode }} · {{ property()!.panelCount }} panels ·
+                {{ property()!.systemSizeKw }} kW
+              </span>
+            </div>
+          </div>
+
           @if (step() === 1) {
             <h3 class="step-title">Choose your cleaning plan</h3>
             <p class="step-desc">
@@ -98,6 +98,7 @@
                 <app-plan-card
                   [plan]="plan"
                   [selected]="selectedPlanId() === plan.id"
+                  [compact]="true"
                   (select)="selectPlan($event)"
                 />
               }

@@ -12,6 +12,7 @@ import { ServicePlan } from '../../../core/models/invite.models';
       class="plan-card"
       [class.selected]="selected"
       [class.recommended]="plan.recommended"
+      [class.compact]="compact"
       (click)="select.emit(plan.id)"
     >
       @if (plan.recommended) {
@@ -31,7 +32,7 @@ import { ServicePlan } from '../../../core/models/invite.models';
         <p class="plan-annual">{{ plan.visitsPerYear }} cleans · {{ plan.annualPrice | currency: 'ZAR':'symbol-narrow':'1.0-0' }}/yr</p>
       }
       <ul class="plan-features">
-        @for (feature of plan.features; track feature) {
+        @for (feature of visibleFeatures; track feature) {
           <li>{{ feature }}</li>
         }
       </ul>
@@ -50,6 +51,9 @@ import { ServicePlan } from '../../../core/models/invite.models';
       transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
       font-family: inherit;
       color: inherit;
+    }
+    .plan-card.compact {
+      padding: var(--spacing-md) var(--spacing-lg);
     }
     .plan-card:hover {
       border-color: var(--color-border-strong);
@@ -125,5 +129,11 @@ import { ServicePlan } from '../../../core/models/invite.models';
 export class PlanCardComponent {
   @Input({ required: true }) plan!: ServicePlan;
   @Input() selected = false;
+  @Input() compact = false;
   @Output() select = new EventEmitter<string>();
+
+  get visibleFeatures(): string[] {
+    if (!this.compact) return this.plan.features;
+    return this.plan.features.slice(0, 3);
+  }
 }
