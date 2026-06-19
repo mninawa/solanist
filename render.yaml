@@ -63,7 +63,9 @@ services:
         sync: false
       - key: Paystack__CallbackUrl
         sync: false
-      - key: Paystack__Plans__Quarterly Solar Care
+      # Plan codes: use plan id keys (no spaces — Render rejects spaces in env var names).
+      # Maps to "Quarterly Solar Care" in PaystackOptions when PAYSTACK_PLAN_QUARTERLY is unset.
+      - key: Paystack__Plans__plan-quarterly
         sync: false
       - key: Email__PostmarkServerToken
         sync: false

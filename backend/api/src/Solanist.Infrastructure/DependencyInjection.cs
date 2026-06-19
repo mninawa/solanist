@@ -75,6 +75,16 @@ public static class DependencyInjection
             services.AddSingleton<IFileStorageService, DisabledFileStorageService>();
 
         services.Configure<PaystackOptions>(configuration.GetSection(PaystackOptions.SectionName));
+        services.PostConfigure<PaystackOptions>(options =>
+        {
+            var quarterly = Environment.GetEnvironmentVariable("PAYSTACK_PLAN_QUARTERLY");
+            if (!string.IsNullOrWhiteSpace(quarterly))
+            {
+                options.Plans["Quarterly Solar Care"] = quarterly;
+                options.Plans["plan-quarterly"] = quarterly;
+                options.Plans["plan-plus"] = quarterly;
+            }
+        });
         var paystackOptions = configuration.GetSection(PaystackOptions.SectionName).Get<PaystackOptions>() ?? new PaystackOptions();
         var mongoConnection = mongoSection.Get<MongoOptions>()?.ConnectionString;
         if (paystackOptions.IsEnabled && !string.IsNullOrWhiteSpace(mongoConnection))
