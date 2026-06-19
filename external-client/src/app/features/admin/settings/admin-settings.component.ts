@@ -37,6 +37,8 @@ interface PlanFormState {
 
 const PAYSTACK_INTERVALS = [
   { value: 'once', label: 'Once-off (no Paystack plan)' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly' },
   { value: 'biannually', label: 'Bi-annually' },
