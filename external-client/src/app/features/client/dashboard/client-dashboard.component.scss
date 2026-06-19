@@ -93,8 +93,11 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
+  // On phones we hide the summary tiles to reduce vertical noise — the same
+  // numbers are surfaced inside each property card and in the billing/booking
+  // panels below, which take the full width of the screen.
+  @media (max-width: 768px) {
+    display: none;
   }
 
   .stat-card {
