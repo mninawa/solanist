@@ -255,9 +255,14 @@
       <section class="properties-main">
         <div class="section-header">
           <h2 class="section-heading">Your Properties</h2>
-          <button type="button" class="btn btn-primary add-btn" (click)="openForm()">
+          <button
+            type="button"
+            class="btn btn-primary btn-icon add-btn"
+            (click)="openForm()"
+            aria-label="Add property"
+            title="Add property"
+          >
             <app-icon name="plus" [size]="18" />
-            Add property
           </button>
         </div>
         @if (uploadError()) {

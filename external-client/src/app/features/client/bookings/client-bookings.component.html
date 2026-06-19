@@ -4,9 +4,14 @@
       <h1 class="page-title">Bookings</h1>
       <p class="page-subtitle">View and manage your upcoming and past bookings.</p>
     </div>
-    <button type="button" class="btn btn-primary" (click)="openBookClean()">
-      <app-icon name="plus" [size]="16" />
-      Book a Clean
+    <button
+      type="button"
+      class="btn btn-primary btn-icon"
+      (click)="openBookClean()"
+      aria-label="Book a clean"
+      title="Book a clean"
+    >
+      <app-icon name="plus" [size]="18" />
     </button>
   </header>
 

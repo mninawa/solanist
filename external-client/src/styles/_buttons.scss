@@ -75,6 +75,28 @@
   width: 100%;
 }
 
+// Icon-only modifier for `.btn`. Keeps the colour treatment (primary,
+// outline, etc.) but collapses the button to a square pill containing only
+// an icon. Always pair with `aria-label` (and ideally `title`) so the
+// purpose is clear to assistive tech and on hover.
+.btn-icon {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  gap: 0;
+  flex-shrink: 0;
+
+  &.btn-sm {
+    width: 32px;
+    height: 32px;
+  }
+
+  &.btn-lg {
+    width: 48px;
+    height: 48px;
+  }
+}
+
 .btn-whatsapp {
   background: #25d366;
   color: #ffffff;
