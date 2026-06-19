@@ -44,6 +44,12 @@ export class ClientPropertiesComponent implements OnInit {
   uploadError = signal<string | null>(null);
   formImage = signal<string | null>(null);
   assignPlanProperty = signal<PropertySummary | null>(null);
+  editingDateId = signal<string | null>(null);
+  draftDate = signal<string>('');
+  savingDateId = signal<string | null>(null);
+  dateError = signal<string | null>(null);
+
+  readonly today = new Date().toISOString().slice(0, 10);
 
   readonly roofTypes = ROOF_TYPES;
   readonly minPanels = APP_CONFIG.minPanelCount;
@@ -239,6 +245,55 @@ export class ClientPropertiesComponent implements OnInit {
     if (variant === 'purple') return 'badge-plan-purple';
     if (variant === 'blue') return 'badge-plan-blue';
     return 'badge-plan-neutral';
+  }
+
+  startEditDate(prop: PropertySummary): void {
+    this.dateError.set(null);
+    this.draftDate.set(prop.nextCleanDate ? prop.nextCleanDate.slice(0, 10) : '');
+    this.editingDateId.set(prop.id);
+  }
+
+  cancelEditDate(): void {
+    this.editingDateId.set(null);
+    this.draftDate.set('');
+    this.dateError.set(null);
+  }
+
+  saveDate(prop: PropertySummary): void {
+    const value = this.draftDate().trim();
+    if (!value) {
+      this.dateError.set('Pick a date first.');
+      return;
+    }
+    this.savingDateId.set(prop.id);
+    this.dateError.set(null);
+    this.clientService.updatePropertyNextClean(prop.id, value).subscribe({
+      next: (updated) => {
+        this.properties.update((list) => list.map((p) => (p.id === updated.id ? updated : p)));
+        this.savingDateId.set(null);
+        this.editingDateId.set(null);
+      },
+      error: () => {
+        this.dateError.set('Could not update the date. Please try again.');
+        this.savingDateId.set(null);
+      },
+    });
+  }
+
+  clearDate(prop: PropertySummary): void {
+    this.savingDateId.set(prop.id);
+    this.dateError.set(null);
+    this.clientService.updatePropertyNextClean(prop.id, null).subscribe({
+      next: (updated) => {
+        this.properties.update((list) => list.map((p) => (p.id === updated.id ? updated : p)));
+        this.savingDateId.set(null);
+        this.editingDateId.set(null);
+      },
+      error: () => {
+        this.dateError.set('Could not clear the date. Please try again.');
+        this.savingDateId.set(null);
+      },
+    });
   }
 
   openAssignPlan(prop: PropertySummary): void {

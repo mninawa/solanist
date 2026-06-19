@@ -246,6 +246,22 @@ public sealed class ClientController(IClientService client, IAuthService auth) :
         return OkData(await client.UpdatePropertyImageAsync(id, request.ImageUrl, ct));
     }
 
+    [HttpPatch("properties/{id}/next-clean")]
+    public async Task<ActionResult<ApiResponse<PropertySummaryDto>>> UpdatePropertyNextClean(
+        string id,
+        [FromBody] UpdatePropertyNextCleanRequest request,
+        CancellationToken ct)
+    {
+        try
+        {
+            return OkData(await client.UpdatePropertyNextCleanAsync(id, request.Date, ct));
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "invalid_date")
+        {
+            return BadRequest(ApiResponse<PropertySummaryDto?>.Fail("invalid_date"));
+        }
+    }
+
     [HttpPatch("properties/{id}/primary")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<PropertySummaryDto>>>> SetPrimaryProperty(
         string id,

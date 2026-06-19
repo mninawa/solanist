@@ -254,6 +254,19 @@ export class ClientService {
     return of({ ...updated }).pipe(delay(300));
   }
 
+  updatePropertyNextClean(id: string, date: string | null): Observable<PropertySummary> {
+    if (this.useApi) {
+      return this.api.patch<PropertySummary>(`/client/properties/${id}/next-clean`, { date });
+    }
+    this.properties = this.properties.map((p) =>
+      p.id === id ? { ...p, nextCleanDate: date } : p,
+    );
+    this.persistProperties();
+    const updated = this.properties.find((p) => p.id === id);
+    if (!updated) return throwError(() => new Error('Property not found.'));
+    return of({ ...updated }).pipe(delay(200));
+  }
+
   setPrimaryProperty(id: string): Observable<PropertySummary[]> {
     if (this.useApi) {
       return this.api.patch<PropertySummary[]>(`/client/properties/${id}/primary`, {});

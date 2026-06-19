@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -310,6 +311,31 @@ public sealed class MongoClientService : IClientService
             doc,
             cancellationToken: ct);
         return MongoMappers.ToPropertyDto(doc);
+    }
+
+    public async Task<PropertySummaryDto> UpdatePropertyNextCleanAsync(string propertyId, string? date, CancellationToken ct = default)
+    {
+        var normalized = NormalizeCleanDate(date);
+        var properties = await GetPropertyDocsAsync(ct);
+        var doc = properties.FirstOrDefault(p => p.Id == propertyId)
+            ?? throw new InvalidOperationException("Property not found.");
+        doc.NextCleanDate = normalized;
+        if (normalized is null)
+            doc.NextCleanTimeSlot = null;
+        await Properties.ReplaceOneAsync(
+            p => p.Id == propertyId && p.CustomerId == CustomerId,
+            doc,
+            cancellationToken: ct);
+        return MongoMappers.ToPropertyDto(doc);
+    }
+
+    private static string? NormalizeCleanDate(string? date)
+    {
+        if (string.IsNullOrWhiteSpace(date))
+            return null;
+        if (!DateOnly.TryParse(date.Trim(), CultureInfo.InvariantCulture, out var parsed))
+            throw new InvalidOperationException("invalid_date");
+        return parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     }
 
     public async Task<IReadOnlyList<PropertySummaryDto>> SetPrimaryPropertyAsync(string propertyId, CancellationToken ct = default)

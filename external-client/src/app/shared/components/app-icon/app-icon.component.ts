@@ -37,6 +37,7 @@ export type AppIconName =
   | 'lightbulb'
   | 'arrow-left'
   | 'pause'
+  | 'edit'
   | 'trash';
 
 const ICONS: Record<AppIconName, string> = {
@@ -76,6 +77,7 @@ const ICONS: Record<AppIconName, string> = {
   lightbulb: 'M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z',
   'arrow-left': 'M19 12H5M12 19l-7-7 7-7',
   pause: 'M10 5v14M14 5v14',
+  edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z',
   trash: 'M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0h10m-9 4v8a1 1 0 001 1h6a1 1 0 001-1v-8',
 };
 

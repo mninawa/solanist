@@ -206,6 +206,7 @@ public sealed record CreatePropertyRequest(
     double? SystemSizeKw = null);
 
 public sealed record UpdatePropertyImageRequest(string ImageUrl);
+public sealed record UpdatePropertyNextCleanRequest(string? Date);
 
 public sealed record SetBillingModeRequest(string BillingMode);
 

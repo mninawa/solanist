@@ -125,6 +125,25 @@ public sealed class MockClientService : IClientService
         return Task.FromResult(_properties[index]);
     }
 
+    public Task<PropertySummaryDto> UpdatePropertyNextCleanAsync(string propertyId, string? date, CancellationToken ct = default)
+    {
+        var index = _properties.FindIndex(p => p.Id == propertyId);
+        if (index < 0) throw new InvalidOperationException("Property not found.");
+        string? normalized = null;
+        if (!string.IsNullOrWhiteSpace(date))
+        {
+            if (!DateOnly.TryParse(date.Trim(), System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+                throw new InvalidOperationException("invalid_date");
+            normalized = parsed.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        _properties[index] = _properties[index] with
+        {
+            NextCleanDate = normalized,
+            NextCleanTimeSlot = normalized is null ? null : _properties[index].NextCleanTimeSlot,
+        };
+        return Task.FromResult(_properties[index]);
+    }
+
     public Task<IReadOnlyList<PropertySummaryDto>> SetPrimaryPropertyAsync(string propertyId, CancellationToken ct = default)
     {
         _properties = _properties.Select(p => p with { IsPrimary = p.Id == propertyId }).ToList();

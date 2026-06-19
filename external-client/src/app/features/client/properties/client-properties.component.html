@@ -233,14 +233,54 @@
                   </div>
                 </div>
 
-                <div class="next-clean-row">
-                  <app-icon name="calendar" [size]="16" />
+                @if (editingDateId() === prop.id) {
+                  <div class="next-clean-edit">
+                    <app-icon name="calendar" [size]="16" />
+                    <input
+                      type="date"
+                      class="form-input next-clean-input"
+                      [min]="today"
+                      [ngModel]="draftDate()"
+                      (ngModelChange)="draftDate.set($event)"
+                    />
+                    <button
+                      type="button"
+                      class="icon-btn next-clean-save"
+                      aria-label="Save date"
+                      [disabled]="savingDateId() === prop.id"
+                      (click)="saveDate(prop)"
+                    >
+                      <app-icon name="check" [size]="16" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn next-clean-cancel"
+                      aria-label="Cancel"
+                      [disabled]="savingDateId() === prop.id"
+                      (click)="cancelEditDate()"
+                    >
+                      <app-icon name="close" [size]="16" />
+                    </button>
+                  </div>
                   @if (prop.nextCleanDate) {
-                    <span>Next clean <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</strong></span>
-                  } @else {
-                    <span>Next clean <strong>Not scheduled</strong></span>
+                    <button type="button" class="next-clean-clear" (click)="clearDate(prop)">
+                      Clear date
+                    </button>
                   }
-                </div>
+                  @if (dateError()) {
+                    <p class="form-error next-clean-error">{{ dateError() }}</p>
+                  }
+                } @else {
+                  <button type="button" class="next-clean-row next-clean-row-btn" (click)="startEditDate(prop)">
+                    <app-icon name="calendar" [size]="16" />
+                    @if (prop.nextCleanDate) {
+                      <span>Next clean <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</strong></span>
+                    } @else {
+                      <span>Next clean <strong>Not scheduled</strong></span>
+                    }
+                    <app-icon name="edit" [size]="14" class="next-clean-edit-icon" />
+                  </button>
+                }
 
                 <div class="property-actions" [class.property-actions-primary]="prop.isPrimary">
                   @if (!prop.isPrimary) {

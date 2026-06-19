@@ -25,6 +25,7 @@ public interface IClientService
     Task<PropertyPlanDetailsDto?> GetPropertyPlanAsync(string propertyId, CancellationToken ct = default);
     Task<PropertySummaryDto> AddPropertyAsync(CreatePropertyRequest request, CancellationToken ct = default);
     Task<PropertySummaryDto> UpdatePropertyImageAsync(string propertyId, string imageUrl, CancellationToken ct = default);
+    Task<PropertySummaryDto> UpdatePropertyNextCleanAsync(string propertyId, string? date, CancellationToken ct = default);
     Task<IReadOnlyList<PropertySummaryDto>> SetPrimaryPropertyAsync(string propertyId, CancellationToken ct = default);
     Task<IReadOnlyList<PropertySummaryDto>> DeletePropertyAsync(string propertyId, CancellationToken ct = default);
     Task<ClientProfileDto> GetProfileAsync(CancellationToken ct = default);
