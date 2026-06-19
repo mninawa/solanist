@@ -2,10 +2,15 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { of, switchMap } from 'rxjs';
 import { ClientService } from '../../../core/services/client.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { PaystackService } from '../../../core/services/paystack.service';
 import { CreatePropertyRequest, PropertySummary } from '../../../core/models/client.models';
+import { ServicePlan } from '../../../core/models/invite.models';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
+import { PlanCardComponent } from '../../../shared/components/plan-card/plan-card.component';
 import { ClientAssignPlanDrawerComponent } from '../assign-plan/client-assign-plan-drawer.component';
 import { fallbackPropertyImage, readAndResizeImage } from '../../../core/util/property-image';
 
@@ -23,6 +28,7 @@ const ROOF_TYPES = ['Tile Roof', 'Metal Roof', 'Flat Roof', 'Thatch (special acc
     CurrencyPipe,
     LoadingStateComponent,
     AppIconComponent,
+    PlanCardComponent,
     ClientAssignPlanDrawerComponent,
   ],
   templateUrl: './client-properties.component.html',
@@ -30,6 +36,8 @@ const ROOF_TYPES = ['Tile Roof', 'Metal Roof', 'Flat Roof', 'Thatch (special acc
 })
 export class ClientPropertiesComponent implements OnInit {
   private readonly clientService = inject(ClientService);
+  private readonly auth = inject(AuthService);
+  private readonly paystack = inject(PaystackService);
 
   properties = signal<PropertySummary[]>([]);
   loading = signal(true);
@@ -54,6 +62,22 @@ export class ClientPropertiesComponent implements OnInit {
   readonly roofTypes = ROOF_TYPES;
   readonly minPanels = APP_CONFIG.minPanelCount;
   readonly maxPanels = APP_CONFIG.maxPanelCount;
+  readonly addStepLabels = ['Property', 'First clean', 'Plan'];
+
+  formStep = signal(1);
+  firstCleanDate = signal('');
+  createdProperty = signal<PropertySummary | null>(null);
+  plans = signal<ServicePlan[]>([]);
+  plansLoading = signal(false);
+  selectedPlanId = signal<string | null>(null);
+  paystackEnabled = signal(false);
+  subscribing = signal(false);
+  subscribePending = signal(false);
+  subscribeError = signal<string | null>(null);
+
+  selectedPlan = computed(
+    () => this.plans().find((p) => p.id === this.selectedPlanId()) ?? null,
+  );
 
   form: CreatePropertyRequest = this.emptyForm();
 
@@ -99,6 +123,13 @@ export class ClientPropertiesComponent implements OnInit {
     this.form = this.emptyForm();
     this.formError.set(null);
     this.formImage.set(null);
+    this.formStep.set(1);
+    this.firstCleanDate.set('');
+    this.createdProperty.set(null);
+    this.selectedPlanId.set(null);
+    this.subscribing.set(false);
+    this.subscribePending.set(false);
+    this.subscribeError.set(null);
     this.showForm.set(true);
   }
 
@@ -106,6 +137,104 @@ export class ClientPropertiesComponent implements OnInit {
     this.showForm.set(false);
     this.formError.set(null);
     this.formImage.set(null);
+    this.formStep.set(1);
+    this.createdProperty.set(null);
+  }
+
+  continueToCleanDate(): void {
+    if (!this.form.address.trim() || !this.form.city.trim() || !this.form.postcode.trim()) {
+      this.formError.set('Please fill in address, city, and postcode.');
+      return;
+    }
+    this.formError.set(null);
+    this.formStep.set(2);
+  }
+
+  backToInfo(): void {
+    this.formError.set(null);
+    this.formStep.set(1);
+  }
+
+  /** Commits the property (with photo + first-clean date) then advances to plan selection. */
+  continueToPlan(): void {
+    if (this.createdProperty()) {
+      this.formStep.set(3);
+      return;
+    }
+    this.form.panelCount = clampPanelCount(this.form.panelCount);
+    this.saving.set(true);
+    this.formError.set(null);
+
+    const photo = this.formImage();
+    const date = this.firstCleanDate().trim();
+    this.clientService
+      .addProperty(this.form)
+      .pipe(
+        switchMap((property) =>
+          photo ? this.clientService.updatePropertyImage(property.id, photo) : of(property),
+        ),
+        switchMap((property) =>
+          date ? this.clientService.updatePropertyNextClean(property.id, date) : of(property),
+        ),
+      )
+      .subscribe({
+        next: (property) => {
+          this.createdProperty.set(property);
+          this.properties.update((list) => [...list, property]);
+          this.saving.set(false);
+          this.loadPlans();
+          this.formStep.set(3);
+        },
+        error: () => {
+          this.formError.set('Could not save property. Please try again.');
+          this.saving.set(false);
+        },
+      });
+  }
+
+  private loadPlans(): void {
+    this.plansLoading.set(true);
+    this.paystack.getConfig().subscribe({
+      next: (cfg) => this.paystackEnabled.set(cfg.enabled),
+    });
+    this.auth.getServicePlans().subscribe({
+      next: (plans) => {
+        this.plans.set(plans);
+        const recommended = plans.find((p) => p.recommended) ?? plans[0];
+        this.selectedPlanId.set(recommended?.id ?? null);
+        this.plansLoading.set(false);
+      },
+      error: () => this.plansLoading.set(false),
+    });
+  }
+
+  selectPlan(id: string): void {
+    this.selectedPlanId.set(id);
+  }
+
+  subscribeToPlan(): void {
+    const property = this.createdProperty();
+    const plan = this.selectedPlan();
+    if (!property || !plan) return;
+    this.subscribing.set(true);
+    this.subscribeError.set(null);
+    this.paystack.checkout(property.id, plan.name).subscribe({
+      next: (result) => {
+        this.subscribing.set(false);
+        this.subscribePending.set(!result.success);
+        this.loadProperties();
+        if (result.success) this.closeForm();
+      },
+      error: (err: Error) => {
+        this.subscribing.set(false);
+        this.subscribeError.set(err.message ?? 'Payment could not be completed.');
+      },
+    });
+  }
+
+  finishWithoutPlan(): void {
+    this.loadProperties();
+    this.closeForm();
   }
 
   /** Stable image to render for a property — falls back to a house photo when missing/broken. */
@@ -162,43 +291,6 @@ export class ClientPropertiesComponent implements OnInit {
 
   clearFormPhoto(): void {
     this.formImage.set(null);
-  }
-
-  saveProperty(): void {
-    if (!this.form.address.trim() || !this.form.city.trim() || !this.form.postcode.trim()) {
-      this.formError.set('Please fill in address, city, and postcode.');
-      return;
-    }
-    this.form.panelCount = clampPanelCount(this.form.panelCount);
-    this.saving.set(true);
-    this.formError.set(null);
-    this.clientService.addProperty(this.form).subscribe({
-      next: (property) => {
-        const photo = this.formImage();
-        if (photo) {
-          this.clientService.updatePropertyImage(property.id, photo).subscribe({
-            next: (withPhoto) => {
-              this.properties.update((list) => [...list, withPhoto]);
-              this.saving.set(false);
-              this.closeForm();
-            },
-            error: () => {
-              this.properties.update((list) => [...list, property]);
-              this.saving.set(false);
-              this.closeForm();
-            },
-          });
-          return;
-        }
-        this.properties.update((list) => [...list, property]);
-        this.saving.set(false);
-        this.closeForm();
-      },
-      error: () => {
-        this.formError.set('Could not save property. Please try again.');
-        this.saving.set(false);
-      },
-    });
   }
 
   setPrimary(id: string): void {
