@@ -45,8 +45,11 @@ internal sealed class PaystackBillingService(
         PaystackInitializeRequestDto request,
         CancellationToken ct = default)
     {
-        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct)
-            ?? throw new InvalidOperationException("subscription_not_found");
+        if (string.IsNullOrWhiteSpace(customerId))
+            throw new InvalidOperationException("customer_not_linked");
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new InvalidOperationException("email_required");
 
         PropertyDocument? property = null;
         if (!string.IsNullOrWhiteSpace(request.PropertyId))
@@ -56,12 +59,15 @@ internal sealed class PaystackBillingService(
                 .FirstOrDefaultAsync(ct);
         }
 
+        var subscription = await GetOrCreateSubscriptionAsync(customerId, request, property, ct);
+
         var planName = request.PlanName
             ?? property?.PlanName
             ?? subscription.PlanName;
 
-        var planCode = await servicePlans.ResolvePaystackPlanCodeAsync(planName, ct)
-            ?? _options.ResolvePlanCode(planName);
+        var planCode = NormalizePaystackPlanCode(
+            await servicePlans.ResolvePaystackPlanCodeAsync(planName, ct)
+            ?? _options.ResolvePlanCode(planName));
         var amountCents = ResolveAmountCents(subscription, property);
         var reference = $"sol-{customerId}-{Guid.NewGuid():N}"[..40];
 
@@ -72,9 +78,18 @@ internal sealed class PaystackBillingService(
             ["plan_name"] = planName ?? "",
         };
 
-        var init = await api.InitializeTransactionAsync(email, amountCents, reference, planCode, metadata, ct);
+        var (init, error) = await api.InitializeTransactionAsync(email, amountCents, reference, planCode, metadata, ct);
         if (init?.AccessCode is null || init.Reference is null)
-            throw new InvalidOperationException("paystack_initialize_failed");
+        {
+            var detail = string.IsNullOrWhiteSpace(error) ? "unknown" : error.Trim();
+            logger.LogWarning(
+                "Paystack initialize failed for customer {CustomerId}: {Detail} (plan={PlanCode}, amountCents={AmountCents})",
+                customerId,
+                detail,
+                planCode ?? "amount-only",
+                planCode is null ? amountCents : 0);
+            throw new InvalidOperationException($"paystack_initialize_failed: {detail}");
+        }
 
         return new PaystackInitializeResponseDto(init.AccessCode, init.Reference, _options.PublicKey, planCode);
     }
@@ -334,6 +349,52 @@ internal sealed class PaystackBillingService(
         }
 
         return null;
+    }
+
+    private async Task<SubscriptionDocument> GetOrCreateSubscriptionAsync(
+        string customerId,
+        PaystackInitializeRequestDto request,
+        PropertyDocument? property,
+        CancellationToken ct)
+    {
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        if (subscription is not null)
+            return subscription;
+
+        var planName = request.PlanName ?? property?.PlanName;
+        var catalog = await servicePlans.GetActiveCatalogAsync(ct);
+        var plan = catalog.FirstOrDefault(p => p.Id == planName || p.Name == planName)
+            ?? catalog.FirstOrDefault(p => p.Recommended)
+            ?? catalog.FirstOrDefault();
+
+        subscription = new SubscriptionDocument
+        {
+            Id = $"sub-{Guid.NewGuid():N}"[..12],
+            CustomerId = customerId,
+            PlanName = plan?.Name ?? planName ?? "Quarterly Solar Care",
+            PlanDescription = plan?.Description ?? "",
+            Status = "pending",
+            PricePerVisit = property?.PricePerClean is > 0 ? property.PricePerClean!.Value : plan?.PricePerVisit ?? 499,
+            AnnualPrice = plan?.AnnualPrice ?? 1996,
+            BillingCycle = "Quarterly",
+            NextBillingDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(14).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            VisitsRemaining = property?.VisitsPerYear is > 0 ? property.VisitsPerYear!.Value : plan?.VisitsPerYear ?? 4,
+            PaymentMethod = "To be added",
+            Features = plan?.Features.ToList() ?? [],
+        };
+
+        await Subscriptions.InsertOneAsync(subscription, cancellationToken: ct);
+        logger.LogInformation("Created missing subscription document for customer {CustomerId}", customerId);
+        return subscription;
+    }
+
+    private static string? NormalizePaystackPlanCode(string? planCode)
+    {
+        if (string.IsNullOrWhiteSpace(planCode))
+            return null;
+
+        var trimmed = planCode.Trim();
+        return trimmed.StartsWith("PLN_", StringComparison.OrdinalIgnoreCase) ? trimmed : null;
     }
 
     private static int ResolveAmountCents(SubscriptionDocument subscription, PropertyDocument? property)

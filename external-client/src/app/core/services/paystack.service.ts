@@ -1,11 +1,40 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, from, map, of, switchMap, throwError } from 'rxjs';
 import { APP_CONFIG } from '../config/app-config';
 
 interface ApiResponse<T> {
   data: T;
   message?: string | null;
+}
+
+function paystackErrorMessage(err: unknown): string {
+  if (err instanceof HttpErrorResponse) {
+    const body = err.error as ApiResponse<unknown> | null;
+    const apiMessage = body?.message?.trim();
+    if (apiMessage) {
+      if (apiMessage.startsWith('paystack_initialize_failed:')) {
+        const detail = apiMessage.slice('paystack_initialize_failed:'.length).trim();
+        if (/invalid key|authorization/i.test(detail))
+          return 'Paystack API keys are invalid — check Render env vars for the BFF service.';
+        if (/plan/i.test(detail))
+          return 'Paystack plan is not configured — link a plan in Admin Settings or set Paystack__Plans__plan-quarterly.';
+        return detail || 'Paystack could not start checkout.';
+      }
+      if (apiMessage === 'customer_not_linked')
+        return 'Your account is not linked to a customer profile. Contact support.';
+      if (apiMessage === 'email_required')
+        return 'Your profile needs an email address before paying with Paystack.';
+      if (apiMessage === 'paystack_not_configured')
+        return 'Paystack is not configured yet.';
+      return apiMessage;
+    }
+    if (err.status === 502)
+      return 'Paystack checkout failed — check BFF logs on Render for details.';
+  }
+  if (err instanceof Error && err.message)
+    return err.message;
+  return 'Payment could not be completed.';
 }
 
 export interface PaystackConfig {
@@ -77,12 +106,7 @@ export class PaystackService {
           switchMap((reference) => this.verify(reference)),
         ),
       ),
-      catchError((err) => {
-        if (err?.status === 503) {
-          return throwError(() => new Error('Paystack is not configured yet.'));
-        }
-        return throwError(() => err);
-      }),
+      catchError((err) => throwError(() => new Error(paystackErrorMessage(err)))),
     );
   }
 

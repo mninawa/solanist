@@ -12,7 +12,7 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
 {
     private readonly PaystackOptions _options = options.Value;
 
-    public async Task<PaystackInitializeData?> InitializeTransactionAsync(
+    public async Task<(PaystackInitializeData? Data, string? Error)> InitializeTransactionAsync(
         string email,
         int amountCents,
         string reference,
@@ -36,8 +36,7 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
         if (!string.IsNullOrWhiteSpace(_options.CallbackUrl))
             body["callback_url"] = _options.CallbackUrl;
 
-        var (data, _) = await PostForDataAsync<PaystackInitializeData>("/transaction/initialize", body, ct);
-        return data;
+        return await PostForDataAsync<PaystackInitializeData>("/transaction/initialize", body, ct);
     }
 
     public async Task<PaystackVerifyData?> VerifyTransactionAsync(string reference, CancellationToken ct)

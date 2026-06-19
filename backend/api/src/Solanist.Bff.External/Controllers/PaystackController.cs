@@ -26,15 +26,26 @@ public sealed class PaystackController(
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 ApiResponse<PaystackInitializeResponseDto?>.Fail("paystack_not_configured"));
 
-        var profile = await client.GetProfileAsync(ct);
-        var result = await paystack.InitializeSubscriptionAsync(
-            currentUser.CustomerId ?? "",
-            profile.Email,
-            profile.FirstName,
-            profile.LastName,
-            request,
-            ct);
-        return OkData(result);
+        try
+        {
+            var customerId = currentUser.RequireCustomerId();
+            var profile = await client.GetProfileAsync(ct);
+            var result = await paystack.InitializeSubscriptionAsync(
+                customerId,
+                profile.Email,
+                profile.FirstName,
+                profile.LastName,
+                request,
+                ct);
+            return OkData(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            var message = ex.Message;
+            if (message.Contains("no linked customer", StringComparison.OrdinalIgnoreCase))
+                message = "customer_not_linked";
+            return MapPaystackFailure<PaystackInitializeResponseDto>(message);
+        }
     }
 
     [HttpPost("verify")]
@@ -59,5 +70,16 @@ public sealed class PaystackController(
 
         var result = await paystack.CancelSubscriptionAsync(currentUser.CustomerId ?? "", ct);
         return OkData(result);
+    }
+
+    private ActionResult<ApiResponse<T?>> MapPaystackFailure<T>(string message)
+    {
+        if (message.StartsWith("paystack_initialize_failed:", StringComparison.Ordinal))
+            return StatusCode(StatusCodes.Status502BadGateway, ApiResponse<T?>.Fail(message));
+
+        if (message is "customer_not_linked" or "email_required" or "subscription_not_found")
+            return BadRequest(ApiResponse<T?>.Fail(message));
+
+        return BadRequest(ApiResponse<T?>.Fail(message));
     }
 }
