@@ -15,10 +15,14 @@
           </button>
         } @else {
           <div class="drawer-header-top">
-            <button type="button" class="back-link" (click)="back()">
-              <app-icon name="arrow-left" [size]="16" />
-              {{ step() === 1 ? 'Close' : 'Back' }}
-            </button>
+            @if (step() === 2) {
+              <button type="button" class="back-link" (click)="back()">
+                <app-icon name="arrow-left" [size]="16" />
+                Back
+              </button>
+            } @else {
+              <span class="header-spacer" aria-hidden="true"></span>
+            }
             <h2 id="assign-plan-title">Assign a plan</h2>
             <button type="button" class="icon-btn drawer-close" aria-label="Close" (click)="close()">
               <app-icon name="close" [size]="20" />
