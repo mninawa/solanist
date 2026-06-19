@@ -153,11 +153,11 @@ internal sealed class PaystackBillingService(
 
     private static string BuildPaystackReference(string customerId)
     {
-        var suffix = Guid.NewGuid().ToString("N");
-        var raw = $"sol{customerId.Replace("-", "", StringComparison.Ordinal)}{suffix}";
-        var allowed = raw.Where(c => char.IsLetterOrDigit(c) || c is '-' or '.' or '=').ToArray();
-        var reference = new string(allowed);
-        return reference.Length <= 40 ? reference : reference[..40];
+        // The customer is already carried in transaction metadata, so the reference only
+        // needs to be globally unique. A bare GUID avoids the previous truncation bug where
+        // a long customer id squeezed out the random suffix and produced duplicate references.
+        _ = customerId;
+        return $"sol{Guid.NewGuid():N}";
     }
 
     private static bool IsInvalidPlanError(string? error) =>

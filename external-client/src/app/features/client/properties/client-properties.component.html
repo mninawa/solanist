@@ -189,7 +189,27 @@
         } @else {
           <p class="form-desc">Subscribe to a recurring plan now, or skip and add one whenever you're ready.</p>
 
-          @if (plansLoading()) {
+          @if (subscribePending()) {
+            <div class="subscribe-pending">
+              <div class="success-icon-ring">
+                <app-icon name="check-circle" [size]="36" />
+              </div>
+              <h3>Payment received</h3>
+              <p class="form-desc">
+                We're activating your plan for <strong>{{ createdProperty()?.address }}</strong>.
+                This can take a moment.
+              </p>
+              @if (subscribeDetail()) {
+                <p class="pending-detail">{{ subscribeDetail() }}</p>
+              }
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" [disabled]="subscribing()" (click)="recheckSubscription()">
+                {{ subscribing() ? 'Checking…' : 'Check again' }}
+              </button>
+              <button type="button" class="btn btn-primary" (click)="finishWithoutPlan()">Done</button>
+            </div>
+          } @else if (plansLoading()) {
             <app-loading-state />
           } @else {
             <div class="add-plan-grid form-grid">
@@ -205,9 +225,6 @@
 
             @if (!paystackEnabled()) {
               <p class="form-hint">Online payment isn't enabled yet — you can add a plan later from the property.</p>
-            }
-            @if (subscribePending()) {
-              <p class="form-hint">Payment received — we're activating your plan. You can close this; it'll update once confirmed.</p>
             }
             @if (subscribeError()) {
               <p class="form-error">{{ subscribeError() }}</p>

@@ -74,6 +74,8 @@ export class ClientPropertiesComponent implements OnInit {
   subscribing = signal(false);
   subscribePending = signal(false);
   subscribeError = signal<string | null>(null);
+  subscribeDetail = signal<string | null>(null);
+  private lastSubscribeReference: string | null = null;
 
   selectedPlan = computed(
     () => this.plans().find((p) => p.id === this.selectedPlanId()) ?? null,
@@ -130,6 +132,8 @@ export class ClientPropertiesComponent implements OnInit {
     this.subscribing.set(false);
     this.subscribePending.set(false);
     this.subscribeError.set(null);
+    this.subscribeDetail.set(null);
+    this.lastSubscribeReference = null;
     this.showForm.set(true);
   }
 
@@ -218,16 +222,42 @@ export class ClientPropertiesComponent implements OnInit {
     if (!property || !plan) return;
     this.subscribing.set(true);
     this.subscribeError.set(null);
+    this.subscribeDetail.set(null);
     this.paystack.checkout(property.id, plan.name).subscribe({
       next: (result) => {
         this.subscribing.set(false);
-        this.subscribePending.set(!result.success);
+        this.lastSubscribeReference = result.reference ?? null;
         this.loadProperties();
-        if (result.success) this.closeForm();
+        if (result.success) {
+          this.closeForm();
+        } else {
+          this.subscribePending.set(true);
+          this.subscribeDetail.set(result.detail ?? null);
+        }
       },
       error: (err: Error) => {
         this.subscribing.set(false);
         this.subscribeError.set(err.message ?? 'Payment could not be completed.');
+      },
+    });
+  }
+
+  recheckSubscription(): void {
+    if (!this.lastSubscribeReference || this.subscribing()) return;
+    this.subscribing.set(true);
+    this.paystack.verify(this.lastSubscribeReference).subscribe({
+      next: (result) => {
+        this.subscribing.set(false);
+        this.loadProperties();
+        if (result.success) {
+          this.closeForm();
+        } else {
+          this.subscribeDetail.set(result.detail ?? 'Still confirming with Paystack — try again shortly.');
+        }
+      },
+      error: () => {
+        this.subscribing.set(false);
+        this.subscribeDetail.set('Could not reach Paystack — try again shortly.');
       },
     });
   }

@@ -164,6 +164,31 @@
 
   @media (max-width: 640px) { grid-template-columns: 1fr; }
 }
+.subscribe-pending {
+  text-align: center;
+  max-width: 360px;
+  margin: var(--spacing-md) auto;
+
+  .success-icon-ring {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--color-accent-muted, #e8f0fe);
+    color: var(--color-success, #1f9d55);
+    margin-bottom: var(--spacing-sm);
+  }
+  h3 { font-size: 1.125rem; font-weight: 700; margin: 0 0 var(--spacing-xs); }
+  .pending-detail {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    background: var(--color-surface-muted, #f5f6f8);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+}
 
 .form-grid {
   display: grid;
