@@ -8,8 +8,11 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
+  // On phones we hide the four overview tiles to keep the focus on the
+  // booking list — the same details (next booking, active properties,
+  // visits left, pending) are visible inside each booking card.
+  @media (max-width: 768px) {
+    display: none;
   }
 }
 
@@ -278,6 +281,12 @@
 
   @media (max-width: 1024px) {
     position: static;
+  }
+
+  // Hide the "What to expect" sidebar on mobile so the booking list takes
+  // the full width.
+  @media (max-width: 768px) {
+    display: none;
   }
 }
 
