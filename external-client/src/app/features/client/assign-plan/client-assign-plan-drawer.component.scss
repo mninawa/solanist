@@ -355,6 +355,19 @@
   margin-bottom: var(--spacing-lg);
 }
 
+.pending-detail {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted, #f5f6f8);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.pending-recheck {
+  margin-bottom: var(--spacing-lg);
+}
+
 .success-benefits {
   list-style: none;
   padding: 0;

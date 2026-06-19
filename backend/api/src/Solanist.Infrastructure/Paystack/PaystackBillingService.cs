@@ -179,31 +179,39 @@ internal sealed class PaystackBillingService(
         // The frontend popup's onSuccess can fire a beat before Paystack finalises the
         // charge, so a single verify can come back "pending"/"ongoing". Retry briefly.
         PaystackVerifyData? verified = null;
-        for (var attempt = 1; attempt <= 4; attempt++)
+        string? lastError = null;
+        const int maxAttempts = 5;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            verified = await api.VerifyTransactionAsync(reference, ct);
+            (verified, lastError) = await api.VerifyTransactionAsync(reference, ct);
             if (verified is not null && string.Equals(verified.Status, "success", StringComparison.OrdinalIgnoreCase))
                 break;
 
             logger.LogInformation(
-                "Paystack verify attempt {Attempt}/4 for {Reference} (customer {CustomerId}) returned status '{Status}'.",
+                "Paystack verify attempt {Attempt}/{Max} for {Reference} (customer {CustomerId}) returned status '{Status}' (error '{Error}').",
                 attempt,
+                maxAttempts,
                 reference,
                 customerId,
-                verified?.Status ?? "null");
+                verified?.Status ?? "null",
+                lastError ?? "none");
 
-            if (attempt < 4)
-                await Task.Delay(TimeSpan.FromSeconds(attempt), ct);
+            if (attempt < maxAttempts)
+                await Task.Delay(TimeSpan.FromSeconds(attempt + 1), ct);
         }
 
         if (verified is null || !string.Equals(verified.Status, "success", StringComparison.OrdinalIgnoreCase))
         {
+            var detail = verified?.Status is { Length: > 0 } status
+                ? $"Paystack reported status '{status}'."
+                : lastError ?? "Paystack could not confirm the payment yet.";
             logger.LogWarning(
-                "Paystack verify gave up for {Reference} (customer {CustomerId}) — last status '{Status}'.",
+                "Paystack verify gave up for {Reference} (customer {CustomerId}) — status '{Status}', error '{Error}'.",
                 reference,
                 customerId,
-                verified?.Status ?? "null");
-            return new PaystackVerifyResponseDto(false);
+                verified?.Status ?? "null",
+                lastError ?? "none");
+            return new PaystackVerifyResponseDto(false, Detail: detail);
         }
 
         await ApplySuccessfulChargeAsync(customerId, verified, ct);

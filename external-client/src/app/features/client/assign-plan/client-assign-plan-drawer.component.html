@@ -62,14 +62,26 @@
               @if (selectedPlan(); as plan) {
                 @if (pendingConfirmation()) {
                   We've received your payment for <strong>{{ plan.name }}</strong>. It can take a
-                  moment to activate <strong>{{ property()?.address }}</strong> — refresh in a
-                  minute if it's still pending.
+                  moment to activate <strong>{{ property()?.address }}</strong>.
                 } @else {
                   <strong>{{ plan.name }}</strong> is now active for
                   <strong>{{ property()?.address }}</strong>. We'll confirm your first clean shortly.
                 }
               }
             </p>
+            @if (pendingConfirmation()) {
+              @if (pendingDetail()) {
+                <p class="pending-detail">{{ pendingDetail() }}</p>
+              }
+              <button
+                type="button"
+                class="btn btn-outline btn-sm pending-recheck"
+                [disabled]="rechecking()"
+                (click)="recheck()"
+              >
+                {{ rechecking() ? 'Checking…' : 'Check again' }}
+              </button>
+            }
             <ul class="success-benefits">
               @for (benefit of planBenefits.slice(0, 3); track benefit) {
                 <li>

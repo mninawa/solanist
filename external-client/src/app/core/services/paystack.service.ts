@@ -57,6 +57,8 @@ export interface PaystackVerifyResult {
   success: boolean;
   paymentMethod?: string | null;
   subscriptionStatus?: string | null;
+  detail?: string | null;
+  reference?: string;
 }
 
 interface PaystackTransaction {
@@ -121,7 +123,9 @@ export class PaystackService {
       switchMap((init) =>
         this.loadScript().pipe(
           switchMap(() => this.openPopup(init)),
-          switchMap((reference) => this.verify(reference)),
+          switchMap((reference) =>
+            this.verify(reference).pipe(map((result) => ({ ...result, reference }))),
+          ),
         ),
       ),
       catchError((err) => throwError(() => new Error(paystackErrorMessage(err)))),

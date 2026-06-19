@@ -51,6 +51,9 @@ export class ClientAssignPlanDrawerComponent {
   step = signal(1);
   assignSuccess = signal(false);
   pendingConfirmation = signal(false);
+  pendingDetail = signal<string | null>(null);
+  rechecking = signal(false);
+  private lastReference: string | null = null;
   checkoutBusy = signal(false);
   checkoutError = signal<string | null>(null);
   paystackEnabled = signal(false);
@@ -106,6 +109,9 @@ export class ClientAssignPlanDrawerComponent {
     this.step.set(1);
     this.assignSuccess.set(false);
     this.pendingConfirmation.set(false);
+    this.pendingDetail.set(null);
+    this.rechecking.set(false);
+    this.lastReference = null;
     this.checkoutBusy.set(false);
     this.checkoutError.set(null);
     this.selectedPlanId.set(null);
@@ -150,13 +156,35 @@ export class ClientAssignPlanDrawerComponent {
         this.checkoutBusy.set(false);
         // Payment went through; `success` reflects whether the server could confirm
         // and link it immediately. If not, the webhook will finalise it shortly.
+        this.lastReference = result.reference ?? null;
         this.pendingConfirmation.set(!result.success);
+        this.pendingDetail.set(result.success ? null : (result.detail ?? null));
         this.assignSuccess.set(true);
         this.scrollDrawerTop();
       },
       error: (err: Error) => {
         this.checkoutBusy.set(false);
         this.checkoutError.set(err.message ?? 'Payment could not be completed.');
+      },
+    });
+  }
+
+  recheck(): void {
+    if (!this.lastReference || this.rechecking()) return;
+    this.rechecking.set(true);
+    this.paystack.verify(this.lastReference).subscribe({
+      next: (result) => {
+        this.rechecking.set(false);
+        if (result.success) {
+          this.pendingConfirmation.set(false);
+          this.pendingDetail.set(null);
+        } else {
+          this.pendingDetail.set(result.detail ?? 'Still confirming with Paystack — try again shortly.');
+        }
+      },
+      error: () => {
+        this.rechecking.set(false);
+        this.pendingDetail.set('Could not reach Paystack — try again shortly.');
       },
     });
   }

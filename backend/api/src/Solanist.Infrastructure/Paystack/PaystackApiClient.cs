@@ -38,10 +38,9 @@ internal sealed class PaystackApiClient(HttpClient http, IOptions<PaystackOption
         return await PostForDataAsync<PaystackInitializeData>("/transaction/initialize", body, ct);
     }
 
-    public async Task<PaystackVerifyData?> VerifyTransactionAsync(string reference, CancellationToken ct)
+    public async Task<(PaystackVerifyData? Data, string? Error)> VerifyTransactionAsync(string reference, CancellationToken ct)
     {
-        var (data, _) = await GetForDataAsync<PaystackVerifyData>($"/transaction/verify/{Uri.EscapeDataString(reference)}", ct);
-        return data;
+        return await GetForDataAsync<PaystackVerifyData>($"/transaction/verify/{Uri.EscapeDataString(reference)}", ct);
     }
 
     public async Task<bool> DisableSubscriptionAsync(string subscriptionCode, string emailToken, CancellationToken ct)

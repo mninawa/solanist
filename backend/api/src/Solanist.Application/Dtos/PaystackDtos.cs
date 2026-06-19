@@ -17,6 +17,7 @@ public sealed record PaystackVerifyRequestDto(string Reference);
 public sealed record PaystackVerifyResponseDto(
     bool Success,
     string? PaymentMethod = null,
-    string? SubscriptionStatus = null);
+    string? SubscriptionStatus = null,
+    string? Detail = null);
 
 public sealed record PaystackSubscriptionActionResponseDto(bool Success, string? Message = null);
