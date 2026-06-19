@@ -1,0 +1,138 @@
+<div class="admin-page report-detail-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (!report()) {
+    <app-empty-state iconName="report" title="Report not found" message="This report may have been removed." />
+    <a routerLink="/admin/reports" class="back-link">← Back to reports</a>
+  } @else if (report()) {
+    @let r = report()!;
+    <a routerLink="/admin/reports" class="back-link">
+      <app-icon name="arrow-left" [size]="14" />
+      All reports
+    </a>
+
+    <header class="detail-header">
+      <div>
+        <span class="doc-type">{{ r.documentType }}</span>
+        <h1>{{ r.property.addressLine }}</h1>
+        <p class="subtitle">
+          {{ r.entities.customerName ?? 'Customer' }} ·
+          {{ r.service.completedAt | date: 'd MMM yyyy' }} ·
+          {{ r.entities.staffName ?? 'Technician' }}
+        </p>
+      </div>
+      <button type="button" class="admin-btn admin-btn-sm" (click)="copyNarrative()">
+        <app-icon name="link" [size]="14" />
+        {{ copied() ? 'Copied' : 'Copy AI narrative' }}
+      </button>
+    </header>
+
+    <div class="detail-grid">
+      <section class="admin-card">
+        <h2>Performance</h2>
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="metric-label">Before</span>
+            <strong>{{ r.performance.beforeKwh != null ? (r.performance.beforeKwh | number: '1.0-1') + ' kWh' : '—' }}</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">After</span>
+            <strong>{{ r.performance.afterKwh != null ? (r.performance.afterKwh | number: '1.0-1') + ' kWh' : '—' }}</strong>
+          </div>
+          <div class="metric highlight">
+            <span class="metric-label">Gain</span>
+            <strong>
+              @if (r.performance.kwhGain != null) {
+                +{{ r.performance.kwhGain | number: '1.0-1' }} kWh
+                @if (r.performance.gainPercent != null) {
+                  <span class="metric-sub">({{ r.performance.gainPercent | number: '1.1-1' }}%)</span>
+                }
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Per panel</span>
+            <strong>
+              {{ r.performance.gainPerPanel != null ? (r.performance.gainPerPanel | number: '1.1-1') + ' kWh' : '—' }}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <h2>Property & system</h2>
+        <dl class="meta-list">
+          <div><dt>Address</dt><dd>{{ r.property.fullAddress }}</dd></div>
+          <div><dt>Panels</dt><dd>{{ r.property.panelCount }}</dd></div>
+          <div><dt>System size</dt><dd>{{ r.property.systemSizeKw ?? '—' }} kW</dd></div>
+          <div><dt>Roof</dt><dd>{{ r.property.roofType ?? '—' }}</dd></div>
+          <div><dt>Plan</dt><dd>{{ r.service.planName ?? '—' }}</dd></div>
+          @if (r.property.accessNotes) {
+            <div><dt>Access</dt><dd>{{ r.property.accessNotes }}</dd></div>
+          }
+        </dl>
+      </section>
+
+      <section class="admin-card">
+        <h2>Entity references</h2>
+        <p class="section-hint">Stable IDs for CRM, analytics, and AI pipelines.</p>
+        <dl class="meta-list ids">
+          <div><dt>Report</dt><dd><code>{{ r.entities.reportId }}</code></dd></div>
+          <div><dt>Customer</dt><dd><code>{{ r.entities.customerId }}</code></dd></div>
+          @if (r.entities.propertyId) {
+            <div><dt>Property</dt><dd><code>{{ r.entities.propertyId }}</code></dd></div>
+          }
+          @if (r.entities.bookingId) {
+            <div><dt>Booking</dt><dd><code>{{ r.entities.bookingId }}</code></dd></div>
+          }
+          @if (r.entities.customerEmail) {
+            <div><dt>Email</dt><dd>{{ r.entities.customerEmail }}</dd></div>
+          }
+        </dl>
+      </section>
+
+      <section class="admin-card full-width">
+        <h2>Checklist & notes</h2>
+        @if (r.service.checklistCompleted.length) {
+          <ul class="checklist">
+            @for (item of r.service.checklistCompleted; track item) {
+              <li><app-icon name="check-circle" [size]="14" /> {{ item }}</li>
+            }
+          </ul>
+        }
+        @if (r.service.staffNotes) {
+          <div class="staff-notes">
+            <strong>Technician notes</strong>
+            <p>{{ r.service.staffNotes }}</p>
+          </div>
+        }
+      </section>
+
+      <section class="admin-card full-width">
+        <h2>AI narrative</h2>
+        <p class="section-hint">Plain-language summary exported in JSON for LLM context.</p>
+        <pre class="narrative-block">{{ r.narrativeText }}</pre>
+      </section>
+
+      <section class="admin-card full-width">
+        <h2>Photos ({{ r.media.beforePhotoCount + r.media.afterPhotoCount }})</h2>
+        <div class="photo-grid">
+          @for (photo of r.media.beforePhotos; track photo; let i = $index) {
+            <figure>
+              <img [src]="photo" alt="Before photo {{ i + 1 }}" />
+              <figcaption>Before {{ i + 1 }}</figcaption>
+            </figure>
+          }
+          @for (photo of r.media.afterPhotos; track photo; let i = $index) {
+            <figure>
+              <img [src]="photo" alt="After photo {{ i + 1 }}" />
+              <figcaption>After {{ i + 1 }}</figcaption>
+            </figure>
+          }
+        </div>
+      </section>
+    </div>
+  }
+</div>

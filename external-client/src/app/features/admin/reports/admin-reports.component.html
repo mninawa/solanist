@@ -1,0 +1,148 @@
+<div class="admin-page">
+  <header class="admin-page-header reports-header">
+    <div>
+      <h1>Service reports</h1>
+      <p>Structured cleaning outcomes — ready for customer delivery and AI analysis.</p>
+    </div>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="admin-btn admin-btn-sm"
+        [disabled]="exporting()"
+        (click)="exportJson()"
+      >
+        <app-icon name="download" [size]="14" />
+        {{ exporting() ? 'Exporting…' : 'Export JSON' }}
+      </button>
+    </div>
+  </header>
+
+  @if (stats(); as s) {
+    <div class="admin-stat-grid report-stats">
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Total reports</span>
+          <span class="stat-icon"><app-icon name="report" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ s.totalReports }}</span>
+        <span class="stat-trend trend-neutral">Published to customers</span>
+      </div>
+      <div class="admin-stat-card accent-teal">
+        <div class="stat-top">
+          <span class="stat-label">This month</span>
+          <span class="stat-icon"><app-icon name="calendar" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ s.reportsThisMonth }}</span>
+        <span class="stat-trend trend-neutral">Completed cleans</span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Avg kWh gain</span>
+          <span class="stat-icon"><app-icon name="sun" [size]="16" /></span>
+        </div>
+        <span class="stat-value">
+          {{ s.averageKwhGain != null ? (s.averageKwhGain | number: '1.0-1') : '—' }}
+        </span>
+        <span class="stat-trend trend-neutral">{{ s.reportsWithPerformanceData }} with meter readings</span>
+      </div>
+      <div class="admin-stat-card accent-purple">
+        <div class="stat-top">
+          <span class="stat-label">AI dataset</span>
+          <span class="stat-icon"><app-icon name="lightbulb" [size]="16" /></span>
+        </div>
+        <span class="stat-value ai-value">v1.0</span>
+        <span class="stat-trend trend-neutral">Export includes narrative + entity IDs</span>
+      </div>
+    </div>
+  }
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <app-icon name="empty" [size]="16" />
+      <input
+        type="search"
+        class="search-input"
+        placeholder="Search customer, property, technician…"
+        [(ngModel)]="search"
+        (keyup.enter)="onSearch()"
+      />
+      <button type="button" class="admin-btn admin-btn-sm admin-btn-primary search-btn" (click)="onSearch()">Search</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (reports().length === 0) {
+    <app-empty-state
+      iconName="report"
+      title="No reports yet"
+      message="Completed jobs with published reports will appear here."
+    />
+  } @else {
+    <div class="admin-table-wrap">
+      <table class="admin-table reports-table">
+        <thead>
+          <tr>
+            <th>Completed</th>
+            <th>Customer</th>
+            <th>Property</th>
+            <th>Technician</th>
+            <th>System</th>
+            <th>Performance</th>
+            <th>Media</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (report of reports(); track report.id) {
+            <tr class="report-row">
+              <td>
+                <span class="date-cell">{{ report.completedAt | date: 'd MMM yyyy' }}</span>
+                <span class="cell-muted">{{ report.status }}</span>
+              </td>
+              <td>
+                <strong>{{ report.customerName }}</strong>
+                @if (report.hasStaffNotes) {
+                  <span class="note-dot" title="Technician notes">●</span>
+                }
+              </td>
+              <td>
+                <span>{{ report.propertyAddress }}</span>
+                @if (report.city) {
+                  <span class="cell-muted">{{ report.city }}</span>
+                }
+              </td>
+              <td>{{ report.staffName }}</td>
+              <td>
+                {{ report.panelCount }} panels
+                @if (report.systemSizeKw) {
+                  <span class="cell-muted">{{ report.systemSizeKw }} kW</span>
+                }
+              </td>
+              <td>
+                <span class="perf-value">{{ performanceLabel(report) }}</span>
+                @if (report.performance.beforeKwh != null && report.performance.afterKwh != null) {
+                  <span class="cell-muted">
+                    {{ report.performance.beforeKwh | number: '1.0-1' }} →
+                    {{ report.performance.afterKwh | number: '1.0-1' }} kWh
+                  </span>
+                }
+              </td>
+              <td>
+                <span class="media-pill">
+                  <app-icon name="camera" [size]="13" />
+                  {{ report.photoCount }}
+                </span>
+              </td>
+              <td>
+                <a [routerLink]="['/admin/reports', report.id]" class="admin-btn admin-btn-sm admin-btn-ghost">
+                  View
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -1,0 +1,97 @@
+@if (ws.job(); as j) {
+  <section class="step-section card">
+    <div class="step-section-head">
+      <div>
+        <h2>After Photos</h2>
+        <p class="step-hint">Upload at least {{ minPhotos }} photos after cleaning.</p>
+      </div>
+      <span class="required-badge">{{ afterPhotos().length }} of {{ requiredSlots().length }} required</span>
+    </div>
+
+    @if (beforePhotos()[0] || afterPhotos()[0]) {
+      <div class="compare-row">
+        <div>
+          <span class="compare-label">Before</span>
+          @if (beforePhotos()[0]; as before) {
+            <img [src]="before" alt="Before" />
+          } @else {
+            <div class="compare-empty">—</div>
+          }
+        </div>
+        <div>
+          <span class="compare-label">After</span>
+          @if (afterPhotos()[0]; as after) {
+            <img [src]="after" alt="After" />
+          } @else {
+            <div class="compare-empty">Upload after photo</div>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="photos-layout">
+      <ul class="req-checklist">
+        @for (slot of requiredSlots(); track slot.id; let i = $index) {
+          <li [class.done]="afterPhotos().length > i">
+            <app-icon [name]="afterPhotos().length > i ? 'check-circle' : 'camera'" [size]="16" />
+            {{ slot.label }}
+          </li>
+        }
+      </ul>
+
+      <div class="photo-upload-area">
+        <div class="photo-grid-mock">
+          @for (photo of afterPhotos(); track photo; let i = $index) {
+            <div class="photo-tile">
+              <img [src]="photo" alt="After photo" />
+              <button type="button" class="photo-remove" (click)="remove(i)" aria-label="Remove photo">×</button>
+            </div>
+          }
+          <label class="photo-add-tile">
+            <input type="file" accept="image/*" multiple hidden (change)="onFileSelect($event)" />
+            <app-icon name="camera" [size]="24" />
+            <span>Add Photo</span>
+          </label>
+        </div>
+        @if (uploading()) {
+          <p class="uploading-text">Uploading...</p>
+        }
+      </div>
+    </div>
+
+    <div class="kwh-reading-block">
+      <div class="kwh-reading-icon">
+        <app-icon name="sun" [size]="22" />
+      </div>
+      <div class="kwh-reading-content">
+        <label class="form-label" for="after-kwh">Inverter kWh reading (after)</label>
+        <p class="kwh-hint">
+          Record the meter reading after cleaning.
+          @if (beforeKwh(); as before) {
+            Before reading was <strong>{{ before }} kWh</strong>.
+          }
+        </p>
+        <div class="kwh-input-row">
+          <input
+            id="after-kwh"
+            type="number"
+            class="form-input kwh-input"
+            step="0.1"
+            min="0"
+            placeholder="e.g. 12452.8"
+            [ngModel]="kwhReading()"
+            (ngModelChange)="onKwhInput($event)"
+            (blur)="saveKwhReading()"
+          />
+          <span class="kwh-unit">kWh</span>
+        </div>
+        @if (kwhGain(); as gain) {
+          <p class="kwh-gain">+{{ gain | number: '1.1-1' }} kWh since before reading</p>
+        }
+        @if (kwhReading() && !isValid()) {
+          <p class="kwh-error">Enter a valid reading greater than 0.</p>
+        }
+      </div>
+    </div>
+  </section>
+}

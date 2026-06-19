@@ -1,0 +1,80 @@
+.invite-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 760px;
+  margin-bottom: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: none;
+  }
+}
+
+.admin-card {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+
+  &:hover {
+    border-color: var(--admin-border-strong);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
+.link-sm {
+  font-size: 0.75rem;
+  color: var(--admin-gold);
+  text-decoration: none;
+}
+
+.muted {
+  color: var(--admin-text-muted);
+  font-size: 0.75rem;
+}
+
+.cell-muted {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+code {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.actions-col {
+  white-space: nowrap;
+  text-align: right;
+
+  .link-sm,
+  .link-btn {
+    margin-left: 10px;
+  }
+
+  .link-sm:hover,
+  .link-btn:hover {
+    text-decoration: underline;
+  }
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-gold);
+  cursor: pointer;
+}
+
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+
+  p {
+    margin: 0;
+    color: var(--admin-text-muted);
+  }
+}

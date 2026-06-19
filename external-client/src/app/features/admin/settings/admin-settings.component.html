@@ -1,0 +1,348 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Settings</h1>
+    <p>Portal configuration and service plan catalogue (linked to Paystack billing).</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (settings(); as s) {
+    <div class="settings-grid">
+      <section class="admin-card settings-overview">
+        <div class="admin-card-header">
+          <h2>Portal overview</h2>
+        </div>
+        <dl class="settings-meta">
+          <div>
+            <dt>Environment</dt>
+            <dd>{{ s.environment }}</dd>
+          </div>
+          <div>
+            <dt>Database</dt>
+            <dd>{{ s.databaseName }}</dd>
+          </div>
+          <div>
+            <dt>App URL</dt>
+            <dd class="app-url">
+              <span>{{ s.appBaseUrl }}</span>
+              <button type="button" class="copy-btn" (click)="copyAppUrl(s.appBaseUrl)" [attr.aria-label]="'Copy app URL'">
+                <app-icon name="link" [size]="13" />
+                {{ copied() ? 'Copied' : 'Copy' }}
+              </button>
+            </dd>
+          </div>
+          <div>
+            <dt>Data store</dt>
+            <dd>{{ s.mongoConnected ? 'MongoDB connected' : 'Mock / not connected' }}</dd>
+          </div>
+          <div>
+            <dt>Password reset</dt>
+            <dd>{{ s.passwordResetDemoLinks ? 'Demo links enabled' : 'Email-only (production)' }}</dd>
+          </div>
+        </dl>
+
+        <div class="count-grid">
+          <div class="count-card">
+            <span class="count-value">{{ s.counts.leads }}</span>
+            <span class="count-label">Leads</span>
+          </div>
+          <div class="count-card">
+            <span class="count-value">{{ s.counts.customers }}</span>
+            <span class="count-label">Customers</span>
+          </div>
+          <div class="count-card">
+            <span class="count-value">{{ s.counts.staffMembers }}</span>
+            <span class="count-label">Staff</span>
+          </div>
+          <div class="count-card">
+            <span class="count-value">{{ s.counts.activeSubscriptions }}</span>
+            <span class="count-label">Active plans</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <h2>Integrations</h2>
+        <p class="section-hint">Connection status for external services. Paystack plan codes are managed below.</p>
+        <ul class="integration-list">
+          @for (item of s.integrations; track item.key) {
+            <li class="integration-item" [class]="'integration-item--' + item.status">
+              <span class="integration-icon">
+                <app-icon [name]="integrationIcon(item.key)" [size]="18" />
+              </span>
+              <div class="integration-body">
+                <div class="integration-head">
+                  <strong>{{ item.label }}</strong>
+                  <span class="integration-status">{{ statusLabel(item.status) }}</span>
+                </div>
+                <p>{{ item.detail }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <div class="settings-grid">
+      <section class="admin-card auth-card">
+        <div class="admin-card-header">
+          <h2>Authentication &amp; access</h2>
+        </div>
+        <p class="section-hint">How users sign in and are routed to their portal.</p>
+        <dl class="settings-meta">
+          <div>
+            <dt>Sign-in method</dt>
+            <dd>{{ signInMethod() }}</dd>
+          </div>
+          <div>
+            <dt>Google client</dt>
+            <dd>{{ authConfig()?.googleClientId ? 'Configured' : 'Not configured' }}</dd>
+          </div>
+          <div>
+            <dt>Password login</dt>
+            <dd>{{ authConfig()?.googleOnly ? 'Disabled (SSO only)' : 'Enabled' }}</dd>
+          </div>
+          <div>
+            <dt>Role routing</dt>
+            <dd>Admin · Staff · Client (automatic)</dd>
+          </div>
+          @if (currentUser(); as u) {
+            <div>
+              <dt>Signed in as</dt>
+              <dd>{{ u.firstName }} {{ u.lastName }} · {{ u.email }}</dd>
+            </div>
+          }
+        </dl>
+        <div class="auth-badges">
+          <span class="admin-pill" [class]="authConfig()?.googleOnly ? 'pill-active' : 'pill-paused'">
+            <app-icon name="shield" [size]="12" />
+            {{ authConfig()?.googleOnly ? 'SSO enforced' : 'SSO optional' }}
+          </span>
+        </div>
+      </section>
+
+      <section class="admin-card quick-links-card">
+        <div class="admin-card-header">
+          <h2>Quick links</h2>
+        </div>
+        <p class="section-hint">Jump to the areas you manage most.</p>
+        <div class="quick-links">
+          @for (link of quickLinks; track link.path) {
+            <a class="quick-link" [routerLink]="link.path">
+              <span class="quick-link-icon"><app-icon [name]="link.icon" [size]="18" /></span>
+              <span class="quick-link-body">
+                <strong>{{ link.label }}</strong>
+                <span>{{ link.detail }}</span>
+              </span>
+              <app-icon name="chevron-right" [size]="16" />
+            </a>
+          }
+        </div>
+      </section>
+    </div>
+
+    <section class="admin-card plans-section">
+      <div class="plans-header">
+        <div>
+          <h2>Service plans</h2>
+          <p class="section-hint">Catalogue shown on invites and client subscription checkout.</p>
+        </div>
+        <button type="button" class="admin-btn admin-btn-primary" (click)="openCreatePlan()">
+          <app-icon name="plus" [size]="16" /> Add plan
+        </button>
+      </div>
+
+      @if (planMessage()) {
+        <p class="plan-feedback plan-feedback--ok">{{ planMessage() }}</p>
+      }
+      @if (planError()) {
+        <p class="plan-feedback plan-feedback--error">{{ planError() }}</p>
+      }
+
+      <div class="plan-grid">
+        @for (plan of activePlans(); track plan.id) {
+          <article class="plan-card" [class.plan-card--popular]="plan.popular">
+            <header class="plan-card__head">
+              <div class="plan-card__title-block">
+                <h3>{{ plan.name }}</h3>
+                @if (plan.description) {
+                  <p class="plan-card__desc">{{ plan.description }}</p>
+                }
+              </div>
+              @if (plan.popular) {
+                <span class="admin-tag tag-gold">Popular</span>
+              }
+            </header>
+
+            <div class="plan-card__price">
+              <span class="plan-card__amount">R{{ plan.price | number: '1.0-0' }}</span>
+              <span class="plan-card__cadence">{{ planCadence(plan) }}</span>
+              @if (plan.annualPrice && (plan.visitsPerYear ?? 0) > 1) {
+                <span class="plan-card__annual">
+                  R{{ plan.annualPrice | number: '1.0-0' }} / year · {{ plan.visitsPerYear }} visits
+                </span>
+              }
+            </div>
+
+            <ul class="plan-card__features">
+              @for (feature of plan.features; track feature) {
+                <li>
+                  <app-icon name="check" [size]="14" />
+                  <span>{{ feature }}</span>
+                </li>
+              }
+            </ul>
+
+            <footer class="plan-card__foot">
+              <div class="plan-billing" [class]="'plan-billing--' + billingTone(plan)">
+                <app-icon name="wallet" [size]="14" />
+                <span>{{ billingLabel(plan) }}</span>
+              </div>
+
+              <div class="plan-actions" [class.plan-actions--single]="!showPaystackSync(plan)">
+                <button type="button" class="plan-action-btn" (click)="openEditPlan(plan)">Edit</button>
+                @if (showPaystackSync(plan)) {
+                  <button
+                    type="button"
+                    class="plan-action-btn plan-action-btn--paystack"
+                    [disabled]="syncingId() === plan.id"
+                    (click)="syncPaystack(plan)"
+                  >
+                    {{ syncingId() === plan.id ? 'Linking…' : 'Link Paystack' }}
+                  </button>
+                }
+              </div>
+
+              <button type="button" class="plan-deactivate" (click)="deactivatePlan(plan)">
+                Deactivate plan
+              </button>
+            </footer>
+          </article>
+        }
+      </div>
+    </section>
+    }
+  }
+
+  @if (editorOpen()) {
+    <div class="plan-editor-backdrop" (click)="closeEditor()"></div>
+    <aside class="plan-editor" role="dialog" aria-labelledby="plan-editor-title">
+      <header class="plan-editor-head">
+        <h2 id="plan-editor-title">{{ editorMode() === 'edit' ? 'Edit plan' : 'New service plan' }}</h2>
+        <button type="button" class="icon-btn" (click)="closeEditor()" aria-label="Close">×</button>
+      </header>
+
+      @if (form(); as f) {
+      <form class="plan-editor-form" (ngSubmit)="savePlan()">
+        <label class="field">
+          <span>Plan name *</span>
+          <input type="text" [ngModel]="f.name" (ngModelChange)="patchForm({ name: $event })" name="planName" required />
+        </label>
+
+        <label class="field">
+          <span>Description</span>
+          <textarea
+            rows="2"
+            [ngModel]="f.description"
+            (ngModelChange)="patchForm({ description: $event })"
+            name="planDescription"
+          ></textarea>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Price per visit (ZAR)</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              [ngModel]="f.pricePerVisit"
+              (ngModelChange)="patchForm({ pricePerVisit: $event })"
+              name="pricePerVisit"
+            />
+          </label>
+          <label class="field">
+            <span>Visits per year</span>
+            <input
+              type="number"
+              min="1"
+              max="52"
+              [ngModel]="f.visitsPerYear"
+              (ngModelChange)="patchForm({ visitsPerYear: $event })"
+              name="visitsPerYear"
+            />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Features (one per line)</span>
+          <textarea
+            rows="4"
+            [ngModel]="f.featuresText"
+            (ngModelChange)="patchForm({ featuresText: $event })"
+            name="planFeatures"
+            placeholder="Priority booking&#10;Photo report"
+          ></textarea>
+        </label>
+
+        <label class="field">
+          <span>Paystack billing interval</span>
+          <select
+            [ngModel]="f.paystackInterval"
+            (ngModelChange)="patchForm({ paystackInterval: $event })"
+            name="paystackInterval"
+          >
+            @for (opt of paystackIntervals; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Paystack plan code (PLN_…)</span>
+          <input
+            type="text"
+            [ngModel]="f.paystackPlanCode"
+            (ngModelChange)="patchForm({ paystackPlanCode: $event })"
+            name="paystackPlanCode"
+            placeholder="Leave blank to create via sync"
+          />
+        </label>
+
+        <div class="checkbox-row">
+          <label class="checkbox-field">
+            <input
+              type="checkbox"
+              [ngModel]="f.popular"
+              (ngModelChange)="patchForm({ popular: $event })"
+              name="popular"
+            />
+            Mark as popular / recommended
+          </label>
+          <label class="checkbox-field">
+            <input
+              type="checkbox"
+              [ngModel]="f.active"
+              (ngModelChange)="patchForm({ active: $event })"
+              name="active"
+            />
+            Active (visible on invites)
+          </label>
+        </div>
+
+        @if (planError()) {
+          <p class="plan-feedback plan-feedback--error">{{ planError() }}</p>
+        }
+
+        <footer class="plan-editor-actions">
+          <button type="button" class="admin-btn" (click)="closeEditor()">Cancel</button>
+          <button type="submit" class="admin-btn admin-btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save plan' }}
+          </button>
+        </footer>
+      </form>
+      }
+    </aside>
+  }
+</div>

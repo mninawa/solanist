@@ -1,0 +1,122 @@
+.staff-workflow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  margin-bottom: var(--spacing-md);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.requirements-card {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+
+  h2 {
+    margin: 0 0 var(--spacing-sm);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+}
+
+.req-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 8px 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+
+    &.done {
+      color: var(--color-success);
+      font-weight: 600;
+    }
+  }
+}
+
+.photos-section-title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.card {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.photo-count {
+  margin: var(--spacing-sm) 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.compare-card {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+
+  h2 {
+    margin: 0 0 var(--spacing-md);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.compare-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.compare-grid img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.compare-placeholder {
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+}
+
+.back-btn-spacer {
+  width: 36px;
+}

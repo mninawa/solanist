@@ -1,0 +1,195 @@
+<div class="admin-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (dashboard(); as d) {
+    <div class="admin-stat-grid">
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">New Leads Today</span>
+          <span class="stat-icon"><app-icon name="users" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ d.stats.newLeadsToday }}</span>
+        <span class="stat-trend" [class]="'trend-' + trendDirection(d.stats.newLeadsTrend)">
+          {{ trendArrow(d.stats.newLeadsTrend) }} {{ trendText(d.stats.newLeadsTrend) }}
+        </span>
+      </div>
+      <div class="admin-stat-card accent-purple">
+        <div class="stat-top">
+          <span class="stat-label">Quotes Sent</span>
+          <span class="stat-icon"><app-icon name="report" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ d.stats.quotesSent }}</span>
+        <span class="stat-trend" [class]="'trend-' + trendDirection(d.stats.quotesTrend)">
+          {{ trendArrow(d.stats.quotesTrend) }} {{ trendText(d.stats.quotesTrend) }}
+        </span>
+      </div>
+      <div class="admin-stat-card accent-teal">
+        <div class="stat-top">
+          <span class="stat-label">Jobs Scheduled</span>
+          <span class="stat-icon"><app-icon name="calendar" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ d.stats.jobsScheduled }}</span>
+        <span class="stat-trend" [class]="'trend-' + trendDirection(d.stats.jobsTrend)">
+          {{ trendArrow(d.stats.jobsTrend) }} {{ trendText(d.stats.jobsTrend) }}
+        </span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Active Subscriptions</span>
+          <span class="stat-icon"><app-icon name="subscription" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ d.stats.activeSubscriptions }}</span>
+        <span class="stat-trend" [class]="'trend-' + trendDirection(d.stats.subscriptionsTrend)">
+          {{ trendArrow(d.stats.subscriptionsTrend) }} {{ trendText(d.stats.subscriptionsTrend) }}
+        </span>
+      </div>
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Revenue This Month</span>
+          <span class="stat-icon"><app-icon name="wallet" [size]="16" /></span>
+        </div>
+        <span class="stat-value">R{{ d.stats.revenueMtd | number: '1.0-0' }}</span>
+        <span class="stat-trend" [class]="'trend-' + trendDirection(d.stats.revenueTrend)">
+          {{ trendArrow(d.stats.revenueTrend) }} {{ trendText(d.stats.revenueTrend) }}
+        </span>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <section class="admin-card dash-chart">
+        <div class="admin-card-header">
+          <h2>Revenue Trend</h2>
+          <span class="muted">{{ chartMonthLabel() }}</span>
+        </div>
+        <div class="chart-bars">
+          @for (point of d.revenueTrendPoints; track point.label) {
+            <div class="chart-bar-col">
+              <div
+                class="chart-bar"
+                [style.height.%]="(point.amount / maxRevenueTrend()) * 100"
+                [title]="'R' + (point.amount | number: '1.0-0')"
+              ></div>
+              <span class="chart-bar-label">{{ point.label }}</span>
+            </div>
+          }
+        </div>
+        <div class="chart-footer">
+          <div><span class="muted">Total</span><strong>R{{ d.stats.revenueMtd | number: '1.0-0' }}</strong></div>
+          <div><span class="muted">Paid</span><strong>R{{ d.revenuePaid | number: '1.0-0' }}</strong></div>
+          <div><span class="muted">Pending</span><strong>R{{ d.revenuePending | number: '1.0-0' }}</strong></div>
+          <div><span class="muted">Avg. Deal</span><strong>R{{ d.avgDealSize | number: '1.0-0' }}</strong></div>
+        </div>
+      </section>
+
+      <section class="admin-card funnel-card">
+        <div class="admin-card-header">
+          <h2>Lead Funnel</h2>
+          <span class="funnel-conversion">{{ d.conversionRate }}% conversion</span>
+        </div>
+
+        <div class="funnel-chart">
+          <div class="funnel-stages">
+            @for (stage of d.funnel; track stage.stage; let i = $index) {
+              <a
+                class="funnel-stage"
+                [routerLink]="['/admin/leads']"
+                [queryParams]="{ pipeline: stage.stage }"
+                [attr.aria-label]="stage.label + ': ' + stage.count + ' leads'"
+              >
+                <div
+                  class="funnel-band"
+                  [class.is-zero]="stage.count === 0"
+                  [style.width.%]="funnelBandWidth(i, d.funnel.length)"
+                  [style.--stage-index]="i"
+                >
+                  <span class="funnel-band-label">{{ stage.label }}</span>
+                  <span class="funnel-band-count">{{ stage.count }}</span>
+                </div>
+                @if (i > 0) {
+                  @if (funnelDropOff(i, d.funnel); as drop) {
+                    <span class="funnel-drop">{{ drop }}</span>
+                  }
+                }
+              </a>
+            }
+          </div>
+
+          <div class="funnel-meta">
+            <span>{{ d.funnel[0]?.count ?? 0 }} entered</span>
+            <span>{{ d.funnel[d.funnel.length - 1]?.count ?? 0 }} converted</span>
+          </div>
+        </div>
+
+        <p class="muted footer-note">Avg. time to win {{ d.avgTimeToWin }} days · click a stage to filter leads</p>
+      </section>
+
+      <section class="admin-card">
+        <h2>Gauteng Hotspots</h2>
+        <app-gauteng-hotspots-map [hotspots]="d.hotspots" />
+        <ul class="admin-widget-list">
+          @for (spot of d.hotspots; track spot.area) {
+            <li>
+              <span>{{ spot.area }}</span>
+              <strong>{{ spot.leads }}</strong>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <div class="dash-grid-3">
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <h2>Upcoming Jobs</h2>
+          <a routerLink="/admin/schedule" class="link-sm">View all</a>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <tbody>
+              @for (job of d.upcomingJobs; track job.id) {
+                <tr>
+                  <td class="date-col">{{ job.dateLabel }}</td>
+                  <td>{{ job.time }}</td>
+                  <td>{{ job.service }}</td>
+                  <td><strong>{{ job.customerName }}</strong><br /><span class="muted">{{ job.location }}</span></td>
+                  <td><span class="admin-pill pill-scheduled">{{ job.status }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <h2>Recent Bark Requests</h2>
+        <ul class="bark-list">
+          @for (req of d.barkRequests; track req.id) {
+            <li>
+              <div>
+                <strong>{{ req.customerName }}</strong>
+                <span class="muted">{{ req.location }} · {{ req.minutesAgo }}m ago</span>
+              </div>
+              <span class="admin-pill" [class]="urgencyClass(req.urgency)">
+                {{ req.statusLabel ?? req.urgency }}
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="admin-card ai-card">
+        <h2>
+          <app-icon name="lightbulb" [size]="18" />
+          AI Daily Summary
+        </h2>
+        <ul class="ai-list">
+          @for (line of d.aiSummary; track line) {
+            <li>{{ line }}</li>
+          }
+        </ul>
+      </section>
+    </div>
+    }
+  }
+</div>

@@ -1,0 +1,164 @@
+<div class="page-container">
+  <header class="page-header-row">
+    <div>
+      <h1 class="page-title">Bookings</h1>
+      <p class="page-subtitle">View and manage your upcoming and past bookings.</p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="openBookClean()">
+      <app-icon name="plus" [size]="16" />
+      Book a Clean
+    </button>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="summary-grid">
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-calendar">
+          <app-icon name="calendar" [size]="20" />
+        </div>
+        <div class="stat-label">Next booking</div>
+        @if (nextBooking(); as nb) {
+          <div class="stat-value stat-value-sm">{{ nb.date | date: 'd MMM yyyy' }}</div>
+          <p class="stat-meta">{{ nb.timeSlot }}</p>
+        } @else {
+          <div class="stat-value stat-value-sm">—</div>
+          <p class="stat-meta">No upcoming bookings</p>
+        }
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-home">
+          <app-icon name="home" [size]="20" />
+        </div>
+        <div class="stat-label">Active properties</div>
+        <div class="stat-value">{{ properties().length }}</div>
+        <p class="stat-meta stat-meta-success">Across {{ properties().length }} locations</p>
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-shield">
+          <app-icon name="check-circle" [size]="20" />
+        </div>
+        <div class="stat-label">Visits left this year</div>
+        <div class="stat-value">{{ visitsRemaining() }} of 4</div>
+        <p class="stat-meta">Included in your plan</p>
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-schedule">
+          <app-icon name="schedule" [size]="20" />
+        </div>
+        <div class="stat-label">Pending confirmation</div>
+        <div class="stat-value">{{ pendingCount() }}</div>
+        <p class="stat-meta stat-meta-success">{{ pendingCount() === 0 ? "You're all set!" : 'Awaiting confirmation' }}</p>
+      </div>
+    </div>
+
+    <div class="bookings-layout">
+      <div class="bookings-main">
+        <div class="tabs-scroll">
+          <div class="tabs">
+            <button type="button" class="tab" [class.active]="activeTab() === 'upcoming'" (click)="setTab('upcoming')">Upcoming</button>
+            <button type="button" class="tab" [class.active]="activeTab() === 'past'" (click)="setTab('past')">Past</button>
+            <button type="button" class="tab" [class.active]="activeTab() === 'cancelled'" (click)="setTab('cancelled')">Cancelled</button>
+          </div>
+        </div>
+
+        @if (!filteredBookings().length) {
+          <app-empty-state iconName="calendar" title="No bookings" message="No bookings in this category." />
+        } @else {
+          <div class="bookings-list">
+            @for (booking of filteredBookings(); track booking.id) {
+              <div class="booking-card card">
+                <div class="booking-date-block" [class.booking-date-next]="booking.isNextBooking">
+                  <span class="booking-date-day">{{ booking.date | date: 'd' }}</span>
+                  <span class="booking-date-month">{{ booking.date | date: 'MMM yyyy' }}</span>
+                  <span class="booking-date-weekday">{{ booking.date | date: 'EEE' | uppercase }}</span>
+                </div>
+
+                <div class="booking-body">
+                  <div class="booking-primary">
+                    <div class="booking-title-row">
+                      <h3 class="booking-service">{{ booking.serviceType }}</h3>
+                      @if (booking.isNextBooking) {
+                        <span class="next-badge">Next booking</span>
+                      }
+                    </div>
+                    <p class="booking-address">
+                      <app-icon name="map-pin" [size]="14" />
+                      {{ booking.propertyAddress }}@if (booking.propertyPostcode) {, {{ booking.propertyPostcode }}}
+                    </p>
+                    <p class="booking-time">
+                      <app-icon name="schedule" [size]="14" />
+                      {{ booking.timeSlot }}
+                    </p>
+                  </div>
+
+                  <div class="booking-meta">
+                    @if (booking.planName) {
+                      <span class="plan-badge">{{ booking.planName }}</span>
+                    }
+                    <span class="status-pill" [class]="statusClass(booking)">
+                      <span class="status-dot"></span>
+                      {{ statusLabel(booking) }}
+                    </span>
+                  </div>
+
+                  <div class="booking-actions">
+                    <a [routerLink]="['/client/bookings', booking.id]" class="btn btn-primary btn-sm">
+                      View details
+                      <app-icon name="chevron-right" [size]="14" />
+                    </a>
+                    @if (booking.status === 'upcoming') {
+                      <button type="button" class="btn btn-outline btn-sm" (click)="openReschedule(booking.id)">
+                        <app-icon name="calendar" [size]="14" />
+                        Reschedule
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="reschedule-policy banner-info">
+          <span>You can reschedule up to 48 hours before your appointment. Changes made within 48 hours may be subject to a fee.</span>
+          <button type="button" class="btn btn-outline btn-sm">View reschedule policy</button>
+        </div>
+      </div>
+
+      <aside class="bookings-sidebar">
+        <h3 class="sidebar-title">What to expect on a clean</h3>
+        <ul class="expect-list">
+          @for (item of expectItems; track item.title) {
+            <li>
+              <span class="expect-icon">
+                <app-icon [name]="item.icon" [size]="18" />
+              </span>
+              <div>
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+      </aside>
+    </div>
+  }
+</div>
+
+<app-client-book-clean
+  [open]="bookCleanOpen()"
+  (closed)="closeBookClean()"
+  (bookingCreated)="onBookingCreated($event)"
+/>
+
+<app-client-booking-reschedule
+  [open]="!!rescheduleBookingId()"
+  [bookingId]="rescheduleBookingId()"
+  (closed)="closeReschedule()"
+  (rescheduled)="onBookingRescheduled($event)"
+/>

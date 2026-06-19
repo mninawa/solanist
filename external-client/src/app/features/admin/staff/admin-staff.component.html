@@ -1,0 +1,182 @@
+<div class="admin-page">
+  <header class="admin-page-header staff-header">
+    <div>
+      <h1>Staff</h1>
+      <p>Field team roster, roles, and today's workload.</p>
+    </div>
+    <button type="button" class="admin-btn admin-btn-primary" (click)="openAdd()">
+      <app-icon name="plus" [size]="16" /> Add staff
+    </button>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="admin-stat-grid staff-stats">
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">On duty</span>
+          <span class="stat-icon"><app-icon name="users" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ onDutyCount() }}</span>
+        <span class="stat-trend trend-neutral">{{ staff().length }} total</span>
+      </div>
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Jobs today</span>
+          <span class="stat-icon"><app-icon name="jobs" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ jobsToday() }}</span>
+        <span class="stat-trend trend-neutral">Across all technicians</span>
+      </div>
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Completed</span>
+          <span class="stat-icon"><app-icon name="check-circle" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ completedToday() }}</span>
+        <span class="stat-trend">
+          <a routerLink="/admin/schedule" class="link-sm">View schedule →</a>
+        </span>
+      </div>
+    </div>
+
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <h2>Team roster</h2>
+        <span class="muted">Live from Mongo staff users + today's jobs</span>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Access</th>
+              <th>Jobs today</th>
+              <th>Completed</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of staff(); track member.id) {
+              <tr>
+                <td>
+                  <div class="staff-name">
+                    <span class="lead-avatar staff-avatar">{{ member.fullName.charAt(0) }}</span>
+                    <div>
+                      <strong>{{ member.fullName }}</strong>
+                      <span class="cell-muted">{{ member.role }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ member.email || '—' }}</td>
+                <td>{{ member.phone || '—' }}</td>
+                <td><span class="admin-pill" [class]="roleBadgeClass(member.accountRole)">{{ member.accountRole }}</span></td>
+                <td>{{ member.jobsToday }}</td>
+                <td>{{ member.completedToday }}</td>
+                <td>
+                  <span class="admin-pill" [class]="statusClass(member.status)">{{ statusLabel(member.status) }}</span>
+                </td>
+                <td class="action-icons">
+                  @if (confirmDeleteId() === member.id) {
+                    <span class="confirm-delete">
+                      <span class="confirm-label">Remove?</span>
+                      <button
+                        type="button"
+                        class="confirm-yes"
+                        [disabled]="deletingId() === member.id"
+                        (click)="confirmDelete(member)"
+                      >
+                        {{ deletingId() === member.id ? '…' : 'Yes' }}
+                      </button>
+                      <button type="button" class="confirm-no" (click)="cancelDelete()">No</button>
+                    </span>
+                  } @else {
+                    <a class="action-btn" [href]="'tel:' + member.phone" title="Call" [attr.aria-label]="'Call ' + member.fullName">
+                      <app-icon name="phone" [size]="16" />
+                    </a>
+                    <button type="button" class="action-btn" (click)="openEdit(member)" title="Edit" aria-label="Edit staff member">
+                      <app-icon name="settings" [size]="16" />
+                    </button>
+                    <button type="button" class="action-btn danger" (click)="askDelete(member.id)" title="Remove" aria-label="Remove staff member">
+                      <app-icon name="trash" [size]="16" />
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="empty-row">No staff members yet. Click “Add staff” to invite your first technician.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+@if (drawerOpen()) {
+  <div class="staff-drawer-backdrop" (click)="closeDrawer()">
+    <aside class="staff-drawer" role="dialog" aria-modal="true" aria-labelledby="staff-drawer-title" (click)="$event.stopPropagation()">
+      <header class="staff-drawer-header">
+        <h2 id="staff-drawer-title">{{ editingId() ? 'Edit staff member' : 'Add staff member' }}</h2>
+        <button type="button" class="staff-drawer-close" aria-label="Close" (click)="closeDrawer()">
+          <app-icon name="close" [size]="18" />
+        </button>
+      </header>
+
+      <form class="staff-drawer-body" (ngSubmit)="save()">
+        <div class="form-row">
+          <label class="form-field">
+            <span>First name</span>
+            <input type="text" [(ngModel)]="form.firstName" name="firstName" required />
+          </label>
+          <label class="form-field">
+            <span>Last name</span>
+            <input type="text" [(ngModel)]="form.lastName" name="lastName" required />
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Email (used for Google sign-in)</span>
+          <input type="email" [(ngModel)]="form.email" name="email" required />
+        </label>
+
+        <label class="form-field">
+          <span>Phone</span>
+          <input type="tel" [(ngModel)]="form.phone" name="phone" placeholder="082 000 0000" />
+        </label>
+
+        <label class="form-field">
+          <span>Access level</span>
+          <select [(ngModel)]="form.role" name="role">
+            <option value="staff">Staff — Field Technician</option>
+            <option value="admin">Admin — Full portal access</option>
+          </select>
+        </label>
+
+        @if (formError()) {
+          <p class="form-error">{{ formError() }}</p>
+        }
+
+        <p class="staff-drawer-note">
+          <app-icon name="shield" [size]="14" />
+          The member signs in with Google using this email and is routed to the matching portal.
+        </p>
+
+        <footer class="staff-drawer-footer">
+          <button type="button" class="admin-btn admin-btn-ghost" (click)="closeDrawer()" [disabled]="saving()">
+            Cancel
+          </button>
+          <button type="submit" class="admin-btn admin-btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add staff' }}
+          </button>
+        </footer>
+      </form>
+    </aside>
+  </div>
+}

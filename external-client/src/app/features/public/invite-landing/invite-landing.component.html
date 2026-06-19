@@ -1,0 +1,399 @@
+@if (loading()) {
+  <app-loading-state />
+} @else if (error()) {
+  <div class="page-container">
+    <app-empty-state iconName="link" title="Invite not found" [message]="error()!" />
+  </div>
+} @else {
+    @if (invite(); as data) {
+    @if (signupBlockReason(data); as blockReason) {
+      <div class="invite-blocked-page">
+        <div class="invite-hero blocked-hero">
+          <div class="hero-overlay"></div>
+          <img
+            src="https://images.unsplash.com/photo-1509391366360-2e959784a276?w=900&h=900&fit=crop"
+            alt="Solar panels on a roof"
+          />
+          <div class="hero-caption">
+            <span>Professional solar panel care</span>
+            <strong>{{ showLoginCta(blockReason) ? 'Welcome back to Solanist' : 'Gauteng & surrounds' }}</strong>
+          </div>
+        </div>
+
+        <div class="invite-blocked-panel">
+          <div class="invite-blocked">
+            <app-logo />
+            <div class="blocked-icon" [class.is-expired]="blockReason === 'expired_invite'">
+              @if (blockReason === 'invite_used') {
+                <app-icon name="check-circle" [size]="40" />
+              } @else if (blockReason === 'email_exists') {
+                <app-icon name="profile" [size]="40" />
+              } @else {
+                <app-icon name="empty" [size]="40" />
+              }
+            </div>
+            <h1>{{ blockTitle(blockReason) }}</h1>
+            <p class="blocked-message">{{ blockMessage(blockReason) }}</p>
+
+            <div class="blocked-summary">
+              <div class="summary-row">
+                <span class="summary-icon"><app-icon name="home" [size]="16" /></span>
+                <div class="summary-text">
+                  <span class="label">Property</span>
+                  <span class="value">{{ data.property.address }}, {{ data.property.city }}</span>
+                </div>
+              </div>
+              @if (data.quote.quoteRef) {
+                <div class="summary-row">
+                  <span class="summary-icon"><app-icon name="report" [size]="16" /></span>
+                  <div class="summary-text">
+                    <span class="label">Quote ref</span>
+                    <span class="value mono">{{ data.quote.quoteRef }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (showLoginCta(blockReason)) {
+              <a routerLink="/login" class="btn btn-primary btn-lg btn-block">Log in to your portal</a>
+              <p class="blocked-hint">Use <strong>{{ data.customerEmail }}</strong> to sign in.</p>
+            } @else {
+              <a href="mailto:hello@solanist.co.za" class="btn btn-primary btn-lg btn-block">Contact Solanist</a>
+              <a routerLink="/login" class="btn btn-secondary btn-block blocked-secondary">Already have an account? Log in</a>
+            }
+          </div>
+        </div>
+      </div>
+    } @else if (step() === 0) {
+      <div class="invite-welcome">
+        <div class="invite-hero">
+          <div class="hero-overlay"></div>
+          <img
+            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&h=700&fit=crop"
+            alt="Home with solar panels"
+          />
+          <div class="hero-caption">
+            <span>Professional solar panel care</span>
+            <strong>Gauteng &amp; surrounds</strong>
+          </div>
+        </div>
+        <div class="invite-panel">
+          <app-logo />
+          <div class="welcome-badge">Personalised quote</div>
+          <h1>Hi {{ data.customerName.split(' ')[0] }}!</h1>
+          <p class="intro">Your solar care quote is ready. Choose a plan, confirm your property, and book your first clean in minutes.</p>
+
+          <div class="quote-summary card">
+            <div class="quote-row">
+              <span class="label">Service</span>
+              <span class="value">{{ data.quote.serviceType }}</span>
+            </div>
+            <div class="quote-row">
+              <span class="label">Property</span>
+              <span class="value">{{ data.property.address }}, {{ data.property.city }}</span>
+            </div>
+            @if (data.quote.quoteRef) {
+              <div class="quote-row">
+                <span class="label">Quote ref</span>
+                <span class="value mono">{{ data.quote.quoteRef }}</span>
+              </div>
+            }
+            <div class="quote-row highlight">
+              <span class="label">Starting from</span>
+              <span class="value price">{{ data.quote.basePrice | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</span>
+            </div>
+          </div>
+
+          <ul class="welcome-perks">
+            <li><app-icon name="check-circle" [size]="16" /> Before &amp; after photo reports</li>
+            <li><app-icon name="check-circle" [size]="16" /> Flexible quarterly scheduling</li>
+            <li><app-icon name="check-circle" [size]="16" /> Secure client portal access</li>
+          </ul>
+
+          <button type="button" class="btn btn-primary btn-lg btn-block" (click)="startOnboarding()">
+            View quote &amp; choose your plan
+          </button>
+          <p class="welcome-foot">Takes about 3 minutes · Link expires {{ data.expiresAt | date: 'd MMM yyyy' }}</p>
+        </div>
+      </div>
+    } @else if (step() === 5) {
+      <div class="confirmation-page">
+        <div class="confirmation-card card card-elevated">
+          <div class="confirmation-icon">
+            <app-icon name="check-circle" [size]="56" />
+          </div>
+          <h1>You're all set!</h1>
+          <p class="confirmation-subtitle">Welcome to Solanist. Your account and first booking are confirmed.</p>
+
+          <div class="confirmation-summary">
+            @if (selectedPlan; as plan) {
+              <div class="summary-row">
+                <span class="label">Plan</span>
+                <span class="value">{{ plan.name }}</span>
+              </div>
+            }
+            <div class="summary-row">
+              <span class="label">First visit</span>
+              <span class="value">{{ preferredDate() | date: 'd MMM yyyy' }} · {{ selectedTimeLabel }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="label">Property</span>
+              <span class="value">{{ data.property.address }}, {{ data.property.city }}</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-lg btn-block" (click)="goToDashboard()">
+            Go to my dashboard
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="onboarding">
+        <app-onboarding-stepper [labels]="stepLabels" [currentStep]="step()" />
+
+        <div class="onboarding-layout">
+          <div class="onboarding-main">
+            @if (step() === 1) {
+              <header class="step-header">
+                <div class="step-icon"><app-icon name="subscription" [size]="22" /></div>
+                <div>
+                  <h2>Choose your plan</h2>
+                  <p class="step-desc">Pick the care schedule that fits your property. You can change plans anytime in the portal.</p>
+                </div>
+              </header>
+
+              <div class="plans-grid">
+                @for (plan of data.plans; track plan.id) {
+                  <app-plan-card
+                    [plan]="plan"
+                    [selected]="selectedPlanId() === plan.id"
+                    (select)="selectPlan($event)"
+                  />
+                }
+              </div>
+            }
+
+            @if (step() === 2) {
+              <header class="step-header">
+                <div class="step-icon"><app-icon name="home" [size]="22" /></div>
+                <div>
+                  <h2>Property details</h2>
+                  <p class="step-desc">Confirm panel count and access so our technicians arrive prepared.</p>
+                </div>
+              </header>
+
+              <div class="step-panel card">
+                <div class="property-preview">
+                  <app-icon name="map-pin" [size]="18" />
+                  <div>
+                    <strong>{{ data.property.address }}</strong>
+                    <span>{{ data.property.city }}{{ data.property.postcode ? ', ' + data.property.postcode : '' }}</span>
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="panel-count">Number of solar panels</label>
+                    <div class="panel-stepper">
+                      <button type="button" class="stepper-btn" aria-label="Decrease panels" (click)="bumpPanels(-1)">−</button>
+                      <input
+                        id="panel-count"
+                        type="number"
+                        class="form-input panel-input"
+                        [ngModel]="panelCount()"
+                        (ngModelChange)="updatePanelCount(+$event)"
+                        [min]="minPanels"
+                        [max]="maxPanels"
+                        step="1"
+                        inputmode="numeric"
+                      />
+                      <button type="button" class="stepper-btn" aria-label="Increase panels" (click)="bumpPanels(1)">+</button>
+                      <span class="panel-unit">panels</span>
+                    </div>
+                    <span class="form-hint">{{ minPanels }}–{{ maxPanels | number }} panels per property</span>
+                  </div>
+
+                  <div class="form-group form-group-full">
+                    <span class="form-label">Roof type</span>
+                    <div class="chip-group" role="group" aria-label="Roof type">
+                      @for (type of roofTypes; track type) {
+                        <button
+                          type="button"
+                          class="chip"
+                          [class.selected]="roofType() === type"
+                          (click)="selectRoofType(type)"
+                        >
+                          {{ type }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="form-group form-group-full">
+                    <label class="form-label" for="access-notes">Access to roof</label>
+                    <textarea
+                      id="access-notes"
+                      class="form-textarea"
+                      rows="3"
+                      placeholder="e.g. Side gate code 4521, ladder required, call on arrival…"
+                      [ngModel]="accessNotes()"
+                      (ngModelChange)="accessNotes.set($event)"
+                    ></textarea>
+                    <span class="form-hint">Gate codes, parking, pets, or anything our team should know.</span>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (step() === 3) {
+              <header class="step-header">
+                <div class="step-icon"><app-icon name="calendar" [size]="22" /></div>
+                <div>
+                  <h2>Book your first visit</h2>
+                  <p class="step-desc">Choose a preferred date and time window. We'll confirm by SMS or WhatsApp.</p>
+                </div>
+              </header>
+
+              <div class="date-layout">
+                <div class="step-panel card date-panel">
+                  <label class="form-label" for="preferred-date">Preferred date</label>
+                  <input
+                    id="preferred-date"
+                    type="date"
+                    class="form-input date-input"
+                    [min]="minDate"
+                    [ngModel]="preferredDate()"
+                    (ngModelChange)="preferredDate.set($event)"
+                  />
+                  <span class="form-hint">Earliest available: 3 days from today</span>
+                </div>
+
+                <div class="step-panel card time-panel">
+                  <span class="form-label">Preferred time</span>
+                  <div class="time-slots">
+                    @for (slot of timeSlots; track slot.id) {
+                      <button
+                        type="button"
+                        class="time-slot"
+                        [class.selected]="preferredTimeSlot() === slot.id"
+                        (click)="preferredTimeSlot.set(slot.id)"
+                      >
+                        <strong>{{ slot.label }}</strong>
+                        <span>{{ slot.time }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (step() === 4) {
+              <header class="step-header">
+                <div class="step-icon"><app-icon name="profile" [size]="22" /></div>
+                <div>
+                  <h2>Create your account</h2>
+                  <p class="step-desc">
+                    Finish by signing in with the Google account for
+                    <strong>{{ email() }}</strong>. This invite is tied to that email address.
+                  </p>
+                </div>
+              </header>
+
+              <div class="step-panel card">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="first-name">First name</label>
+                    <input id="first-name" class="form-input" [ngModel]="firstName()" (ngModelChange)="firstName.set($event)" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="last-name">Last name</label>
+                    <input id="last-name" class="form-input" [ngModel]="lastName()" (ngModelChange)="lastName.set($event)" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="email">Email address</label>
+                  <input id="email" type="email" class="form-input" [ngModel]="email()" readonly />
+                  <p class="field-hint">You must continue with the Google account for this exact email — other accounts will be declined.</p>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="phone">Phone number</label>
+                  <input id="phone" type="tel" class="form-input" placeholder="082 123 4567" [ngModel]="phone()" (ngModelChange)="phone.set($event)" />
+                </div>
+                <label class="terms-row">
+                  <input type="checkbox" [ngModel]="acceptedTerms()" (ngModelChange)="acceptedTerms.set($event)" />
+                  <span>I agree to the Terms of Service and privacy policy</span>
+                </label>
+                @if (googleClientId()) {
+                  <div class="google-signup-block">
+                    <app-google-sign-in
+                      [clientId]="googleClientId()!"
+                      [disabled]="submitting() || !acceptedTerms()"
+                      (credential)="onGoogleSignup($event)"
+                    />
+                  </div>
+                } @else {
+                  <p class="form-error">Google Sign-In is not configured. Contact Solanist support.</p>
+                }
+                @if (signupError()) {
+                  <p class="form-error">{{ signupError() }}</p>
+                }
+              </div>
+            }
+
+            <footer class="step-footer">
+              <button type="button" class="btn btn-secondary" (click)="back()">Back</button>
+              @if (step() === 1) {
+                <button type="button" class="btn btn-primary" [disabled]="!selectedPlanId()" (click)="nextFromPlan()">Continue</button>
+              }
+              @if (step() === 2) {
+                <button type="button" class="btn btn-primary" (click)="nextFromProperty()">Continue</button>
+              }
+              @if (step() === 3) {
+                <button type="button" class="btn btn-primary" [disabled]="!preferredDate() || !preferredTimeSlot()" (click)="nextFromDate()">Continue</button>
+              }
+            </footer>
+          </div>
+
+          <aside class="onboarding-aside" aria-label="Booking summary">
+            <div class="aside-card card">
+              <h3>Your quote</h3>
+              <div class="aside-property">
+                <app-icon name="map-pin" [size]="16" />
+                <span>{{ data.property.address }}, {{ data.property.city }}</span>
+              </div>
+
+              @if (selectedPlan; as plan) {
+                <div class="aside-plan">
+                  <span class="aside-label">Selected plan</span>
+                  <strong>{{ plan.name }}</strong>
+                  <span class="aside-price">{{ plan.pricePerVisit | currency: 'ZAR':'symbol-narrow':'1.0-0' }} per clean</span>
+                </div>
+              } @else {
+                <p class="aside-muted">Select a plan to see pricing</p>
+              }
+
+              @if (step() >= 2) {
+                <div class="aside-detail">
+                  <span class="aside-label">Panels</span>
+                  <span>{{ panelCount() }} · {{ roofType() }}</span>
+                </div>
+              }
+
+              @if (step() >= 3 && preferredDate()) {
+                <div class="aside-detail">
+                  <span class="aside-label">First visit</span>
+                  <span>{{ preferredDate() | date: 'd MMM yyyy' }}{{ selectedTimeLabel ? ' · ' + selectedTimeLabel : '' }}</span>
+                </div>
+              }
+
+              <div class="aside-trust">
+                <app-icon name="shield" [size]="16" />
+                <span>Secure signup · No payment required today</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    }
+  }
+}

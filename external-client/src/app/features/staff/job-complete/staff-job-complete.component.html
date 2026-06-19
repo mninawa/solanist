@@ -1,0 +1,77 @@
+@if (ws.job(); as j) {
+  @if (j.completedAt) {
+    <section class="step-section card success-section">
+      <div class="success-confetti">
+        <div class="success-icon-wrap">
+          <app-icon name="check-circle" [size]="48" />
+        </div>
+      </div>
+      <h2>Job Completed!</h2>
+      <p class="success-lead">
+        Great work. The customer report has been generated and the customer will be notified.
+      </p>
+
+      <div class="final-summary-card">
+        <img [src]="j.heroImageUrl" [alt]="j.address" class="preview-image" />
+        <div class="final-body">
+          <strong>{{ j.address }}</strong>
+          <span>{{ j.customerName }}</span>
+          <dl>
+            <div><dt>Completed</dt><dd>{{ j.completedAt | date: 'h:mm a' }}</dd></div>
+            @if (duration(); as d) {
+              <div><dt>Duration</dt><dd>{{ d }}</dd></div>
+            }
+            <div><dt>Photos</dt><dd>Before: {{ j.beforePhotos.length }} · After: {{ j.afterPhotos.length }}</dd></div>
+            @if (j.beforeKwhReading != null) {
+              <div><dt>Before kWh</dt><dd>{{ j.beforeKwhReading }} kWh</dd></div>
+            }
+            @if (j.afterKwhReading != null) {
+              <div><dt>After kWh</dt><dd>{{ j.afterKwhReading }} kWh</dd></div>
+            }
+          </dl>
+        </div>
+      </div>
+
+      <div class="complete-actions">
+        <a routerLink="/staff/dashboard" class="btn btn-primary btn-lg">Back to Today's Jobs</a>
+        <a routerLink="/staff/reports" class="btn btn-outline btn-lg">View completed reports</a>
+      </div>
+      <p class="report-id-note">Client report ID: <code>report-job-{{ j.id }}</code></p>
+    </section>
+  } @else {
+    <section class="step-section card">
+      <div class="step-section-head">
+        <div>
+          <h2>Review &amp; Complete</h2>
+          <p class="step-hint">Review the job summary before completing and generating the customer report.</p>
+        </div>
+      </div>
+
+      <div class="review-grid">
+        <div class="review-stat"><span>Before photos</span><strong>{{ j.beforePhotos.length }}</strong></div>
+        <div class="review-stat"><span>After photos</span><strong>{{ j.afterPhotos.length }}</strong></div>
+        <div class="review-stat"><span>Checklist</span><strong>{{ checklistLabel() }}</strong></div>
+        <div class="review-stat"><span>Before kWh</span><strong>{{ formatKwh(j.beforeKwhReading) }}</strong></div>
+        <div class="review-stat"><span>After kWh</span><strong>{{ formatKwh(j.afterKwhReading) }}</strong></div>
+        @if (kwhDelta(j); as delta) {
+          <div class="review-stat"><span>kWh gain</span><strong class="gain">+{{ delta | number: '1.1-1' }}</strong></div>
+        }
+        <div class="review-stat"><span>Issues</span><strong>{{ j.issue ? 1 : 0 }}</strong></div>
+      </div>
+
+      <ul class="workflow-timeline">
+        @for (step of workflowSteps(); track step.label) {
+          <li [class.done]="step.done">
+            <app-icon [name]="step.done ? 'check-circle' : 'schedule'" [size]="16" />
+            <div>
+              <strong>{{ step.label }}</strong>
+              @if (step.time) {
+                <span>{{ step.time }}</span>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+}

@@ -1,0 +1,6 @@
+@Solanist.Bff.External_HostAddress = http://localhost:5233
+
+GET {{Solanist.Bff.External_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

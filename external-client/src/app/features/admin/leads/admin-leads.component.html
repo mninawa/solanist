@@ -1,0 +1,286 @@
+<div class="admin-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (stats(); as s) {
+      <div class="admin-stat-grid inbox-stats">
+        <div class="admin-stat-card accent-blue">
+          <div class="stat-top">
+            <span class="stat-label">New Leads Today</span>
+            <span class="stat-icon"><app-icon name="users" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.newLeadsToday }}</span>
+          <span class="stat-trend" [class]="'trend-' + trendDirection(s.newLeadsTrend)">
+            {{ trendArrow(s.newLeadsTrend) }} {{ trendText(s.newLeadsTrend) }}
+          </span>
+        </div>
+        <div class="admin-stat-card accent-teal">
+          <div class="stat-top">
+            <span class="stat-label">Email Leads Captured</span>
+            <span class="stat-icon"><app-icon name="mail" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.emailLeadsCaptured }}</span>
+          <span class="stat-trend" [class]="'trend-' + trendDirection(s.emailLeadsTrend)">
+            {{ trendArrow(s.emailLeadsTrend) }} {{ trendText(s.emailLeadsTrend) }}
+          </span>
+        </div>
+        <div class="admin-stat-card accent-red">
+          <div class="stat-top">
+            <span class="stat-label">Urgent Leads</span>
+            <span class="stat-icon"><app-icon name="bell" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.urgentLeads }}</span>
+          <span class="stat-trend negative">Requires immediate follow-up</span>
+        </div>
+        <div class="admin-stat-card accent-purple">
+          <div class="stat-top">
+            <span class="stat-label">Invites Sent</span>
+            <span class="stat-icon"><app-icon name="link" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.invitesSent }}</span>
+          <span class="stat-trend" [class]="'trend-' + trendDirection(s.invitesTrend)">
+            {{ trendArrow(s.invitesTrend) }} {{ trendText(s.invitesTrend) }}
+          </span>
+        </div>
+      </div>
+    }
+
+    <div class="admin-grid-2">
+      <section>
+        <div class="admin-card-header" style="margin-bottom: 12px">
+          <h2 style="font-size: 1rem; font-weight: 700">Bark Lead Inbox</h2>
+          <div class="table-actions">
+            @if (pipelineFilter()) {
+              <span class="admin-pill pill-pipeline">
+                {{ pipelineFilterLabel() }}
+                <button type="button" class="pill-clear" (click)="clearPipelineFilter()" aria-label="Clear pipeline filter">×</button>
+              </span>
+            }
+            <select
+              class="admin-select"
+              [(ngModel)]="statusFilter"
+              (ngModelChange)="onFiltersChanged()"
+              aria-label="Filter by status"
+            >
+              @for (opt of statusOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+            @if (showMoreFilters()) {
+              <select
+                class="admin-select"
+                [(ngModel)]="urgencyFilter"
+                (ngModelChange)="onFiltersChanged()"
+                aria-label="Filter by urgency"
+              >
+                @for (opt of urgencyOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              @if (hasActiveFilters()) {
+                <button type="button" class="admin-btn admin-btn-sm admin-btn-ghost" (click)="clearFilters()">
+                  Clear
+                </button>
+              }
+            }
+            <button type="button" class="admin-btn admin-btn-sm" (click)="toggleMoreFilters()">
+              {{ showMoreFilters() ? 'Fewer Filters' : 'More Filters' }}
+            </button>
+          </div>
+        </div>
+
+        @if (selectedCount() > 0) {
+          <div class="selection-bar">
+            <span><strong>{{ selectedCount() }}</strong> selected</span>
+            <div class="selection-actions">
+              <a
+                class="admin-btn admin-btn-sm"
+                [href]="bulkWhatsAppHref()"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <app-icon name="chat" [size]="14" /> Message
+              </a>
+              <button type="button" class="admin-btn admin-btn-sm admin-btn-ghost" (click)="clearSelection()">
+                Clear
+              </button>
+            </div>
+          </div>
+        }
+
+        <div class="admin-table-wrap" [class.is-loading]="tableLoading()">
+          @if (tableLoading()) {
+            <app-loading-state />
+          }
+          <table class="admin-table inbox-table">
+            <thead>
+              <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    [checked]="allSelected()"
+                    (change)="toggleSelectAll()"
+                    aria-label="Select all leads"
+                  />
+                </th>
+                <th>Customer</th>
+                <th>Location</th>
+                <th>Source</th>
+                <th>Urgency</th>
+                <th>Service</th>
+                <th>Received</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lead of leads(); track lead.id; let i = $index) {
+                <tr [class.row-selected]="isSelected(lead.id)">
+                  <td>
+                    <input
+                      type="checkbox"
+                      [checked]="isSelected(lead.id)"
+                      (change)="toggleSelected(lead.id)"
+                      [attr.aria-label]="'Select ' + lead.customerName"
+                    />
+                  </td>
+                  <td>
+                    <a [routerLink]="['/admin/leads', lead.id]" class="customer-cell customer-link">
+                      <span class="lead-avatar" [style.background]="avatarColor(i)">{{ initials(lead.customerName) }}</span>
+                      <div>
+                        <strong>{{ lead.customerName.split(' ')[0] }}</strong>
+                        <span class="snippet">{{ lead.requestSnippet }}</span>
+                      </div>
+                    </a>
+                  </td>
+                  <td>
+                    <span class="muted">{{ lead.propertyAddress }}, {{ lead.postcode }} {{ lead.province }}</span>
+                  </td>
+                  <td><span class="source-badge">B Bark Email</span></td>
+                  <td>
+                    <span class="admin-pill" [class]="urgencyClass(lead.urgency)">
+                      @if (lead.urgency === 'urgent') { 🔥 }
+                      {{ lead.urgency }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="muted">☀ {{ lead.serviceType }}</span>
+                  </td>
+                  <td>
+                    {{ lead.createdAt | date: 'MMM d, HH:mm' }}
+                    @if (relativeReceived(lead.createdAt)) {
+                      <span class="muted"> {{ relativeReceived(lead.createdAt) }}</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="admin-pill" [class]="statusClass(lead.status)">{{ lead.status }}</span>
+                  </td>
+                  <td class="action-icons">
+                    <a
+                      class="action-btn"
+                      [href]="telHref(lead.customerPhone)"
+                      [attr.aria-label]="'Call ' + lead.customerName"
+                      title="Call"
+                    >
+                      <app-icon name="phone" [size]="16" />
+                    </a>
+                    <a
+                      class="action-btn whatsapp"
+                      [href]="whatsAppHref(lead.customerPhone)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      [attr.aria-label]="'WhatsApp ' + lead.customerName"
+                      title="WhatsApp"
+                    >
+                      <app-icon name="chat" [size]="16" />
+                    </a>
+                    @if (lead.inviteCode) {
+                      <button
+                        type="button"
+                        class="action-btn"
+                        (click)="copyInviteLink(lead)"
+                        [attr.aria-label]="copiedLeadId() === lead.id ? 'Copied' : 'Copy invite link'"
+                        [title]="copiedLeadId() === lead.id ? 'Copied!' : 'Copy invite link'"
+                      >
+                        <app-icon name="link" [size]="16" />
+                      </button>
+                    } @else {
+                      <a
+                        class="action-btn"
+                        [routerLink]="['/admin/leads', lead.id, 'send-invite']"
+                        aria-label="Send invite"
+                        title="Send invite"
+                      >
+                        <app-icon name="link" [size]="16" />
+                      </a>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="table-footer muted">
+          @if (hasActiveFilters()) {
+            Showing {{ leads().length }} of {{ totalLeads() }} leads
+          } @else {
+            Showing 1 to {{ leads().length }} of {{ totalLeads() }} leads
+          }
+        </p>
+      </section>
+
+      <aside class="inbox-widgets">
+        @if (stats(); as s) {
+          <section class="admin-card">
+            <h3>Realtime Capture</h3>
+            <p class="sync-status">
+              <span class="dot" [class.green]="s.emailConnected"></span>
+              {{ s.emailConnected ? 'Email Connected' : 'Disconnected' }}
+            </p>
+            <p class="muted">Last sync {{ lastSyncLabel(s.lastSyncAt) }}</p>
+            <button
+              type="button"
+              class="admin-btn admin-btn-sm"
+              style="margin-top: 12px"
+              [disabled]="syncing()"
+              (click)="syncBark()"
+            >
+              {{ syncing() ? 'Syncing…' : 'Sync Now' }}
+            </button>
+          </section>
+
+          <section class="admin-card">
+            <h3>Hot Lead Score</h3>
+            <div class="admin-score-ring">{{ s.topLeadScore }}/100</div>
+            <p class="muted center">
+              @if (s.topLeadName) {
+                Top open lead: {{ s.topLeadName.split(' ')[0] }}
+              } @else {
+                No open leads in inbox
+              }
+            </p>
+          </section>
+
+          <section class="admin-card">
+            <h3>Top Hotspots</h3>
+            <app-gauteng-hotspots-map [hotspots]="s.hotspots" />
+            <ul class="admin-widget-list">
+              @for (spot of s.hotspots; track spot.area) {
+                <li><span>{{ spot.area }}</span><strong>{{ spot.leads }}</strong></li>
+              }
+            </ul>
+          </section>
+
+          <section class="admin-card">
+            <h3>Suggested Next Steps</h3>
+            <ul class="suggested-list">
+              @for (step of s.suggestedSteps; track step) {
+                <li>{{ step }}</li>
+              }
+            </ul>
+          </section>
+        }
+      </aside>
+    </div>
+  }
+</div>

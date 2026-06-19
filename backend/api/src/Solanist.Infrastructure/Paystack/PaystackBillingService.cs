@@ -1,0 +1,370 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using Solanist.Application.Abstractions;
+using Solanist.Application.Dtos;
+using Solanist.Infrastructure.Options;
+using Solanist.Infrastructure.Persistence.Documents;
+
+namespace Solanist.Infrastructure.Paystack;
+
+internal sealed class PaystackBillingService(
+    PaystackApiClient api,
+    IMongoDatabase db,
+    IServicePlanCatalog servicePlans,
+    IOptions<PaystackOptions> options,
+    ILogger<PaystackBillingService> logger) : IPaystackBillingService
+{
+    private readonly PaystackOptions _options = options.Value;
+
+    private IMongoCollection<CustomerDocument> Customers =>
+        db.GetCollection<CustomerDocument>(MongoCollections.Customers);
+
+    private IMongoCollection<SubscriptionDocument> Subscriptions =>
+        db.GetCollection<SubscriptionDocument>(MongoCollections.Subscriptions);
+
+    private IMongoCollection<PropertyDocument> Properties =>
+        db.GetCollection<PropertyDocument>(MongoCollections.Properties);
+
+    private IMongoCollection<PaymentDocument> Payments =>
+        db.GetCollection<PaymentDocument>(MongoCollections.Payments);
+
+    public bool IsEnabled => _options.IsEnabled;
+
+    public PaystackConfigDto GetConfig() => new(_options.IsEnabled, _options.IsEnabled ? _options.PublicKey : null);
+
+    public async Task<PaystackInitializeResponseDto> InitializeSubscriptionAsync(
+        string customerId,
+        string email,
+        string firstName,
+        string lastName,
+        PaystackInitializeRequestDto request,
+        CancellationToken ct = default)
+    {
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct)
+            ?? throw new InvalidOperationException("subscription_not_found");
+
+        PropertyDocument? property = null;
+        if (!string.IsNullOrWhiteSpace(request.PropertyId))
+        {
+            property = await Properties
+                .Find(p => p.Id == request.PropertyId && p.CustomerId == customerId)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        var planName = request.PlanName
+            ?? property?.PlanName
+            ?? subscription.PlanName;
+
+        var planCode = await servicePlans.ResolvePaystackPlanCodeAsync(planName, ct)
+            ?? _options.ResolvePlanCode(planName);
+        var amountCents = ResolveAmountCents(subscription, property);
+        var reference = $"sol-{customerId}-{Guid.NewGuid():N}"[..40];
+
+        var metadata = new Dictionary<string, string>
+        {
+            ["customer_id"] = customerId,
+            ["property_id"] = property?.Id ?? request.PropertyId ?? "",
+            ["plan_name"] = planName ?? "",
+        };
+
+        var init = await api.InitializeTransactionAsync(email, amountCents, reference, planCode, metadata, ct);
+        if (init?.AccessCode is null || init.Reference is null)
+            throw new InvalidOperationException("paystack_initialize_failed");
+
+        return new PaystackInitializeResponseDto(init.AccessCode, init.Reference, _options.PublicKey, planCode);
+    }
+
+    public async Task<PaystackVerifyResponseDto> VerifyTransactionAsync(
+        string customerId,
+        string reference,
+        CancellationToken ct = default)
+    {
+        var verified = await api.VerifyTransactionAsync(reference, ct);
+        if (verified is null || !string.Equals(verified.Status, "success", StringComparison.OrdinalIgnoreCase))
+            return new PaystackVerifyResponseDto(false);
+
+        await ApplySuccessfulChargeAsync(customerId, verified, ct);
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        return new PaystackVerifyResponseDto(
+            true,
+            subscription?.PaymentMethod,
+            subscription?.Status);
+    }
+
+    public async Task<PaystackSubscriptionActionResponseDto> CancelSubscriptionAsync(
+        string customerId,
+        CancellationToken ct = default)
+    {
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        if (subscription is null || string.IsNullOrWhiteSpace(subscription.PaystackSubscriptionCode))
+            return new PaystackSubscriptionActionResponseDto(false, "No Paystack subscription on file.");
+
+        if (string.IsNullOrWhiteSpace(subscription.PaystackEmailToken))
+            return new PaystackSubscriptionActionResponseDto(false, "Paystack email token missing — contact support.");
+
+        var ok = await api.DisableSubscriptionAsync(
+            subscription.PaystackSubscriptionCode,
+            subscription.PaystackEmailToken,
+            ct);
+        if (!ok)
+            return new PaystackSubscriptionActionResponseDto(false, "Paystack could not cancel the subscription.");
+
+        subscription.Status = "cancelled";
+        subscription.PaymentProvider = "paystack";
+        await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+
+        var properties = await Properties.Find(p => p.CustomerId == customerId).ToListAsync(ct);
+        foreach (var property in properties)
+        {
+            property.SubscriptionStatus = "paused";
+            await Properties.ReplaceOneAsync(p => p.Id == property.Id, property, cancellationToken: ct);
+        }
+
+        return new PaystackSubscriptionActionResponseDto(true, "Subscription cancelled.");
+    }
+
+    public async Task HandleWebhookAsync(string rawBody, string? signature, CancellationToken ct = default)
+    {
+        if (!VerifySignature(rawBody, signature))
+        {
+            logger.LogWarning("Rejected Paystack webhook — invalid signature.");
+            throw new UnauthorizedAccessException("invalid_signature");
+        }
+
+        var payload = JsonSerializer.Deserialize<PaystackWebhookEvent>(rawBody);
+        if (payload?.Event is null) return;
+
+        switch (payload.Event)
+        {
+            case "charge.success":
+                await HandleChargeSuccessAsync(payload.Data, ct);
+                break;
+            case "subscription.create":
+                await HandleSubscriptionCreateAsync(payload.Data, ct);
+                break;
+            case "subscription.disable":
+            case "subscription.not_renew":
+                await HandleSubscriptionDisabledAsync(payload.Data, ct);
+                break;
+            case "invoice.payment_failed":
+                await HandlePaymentFailedAsync(payload.Data, ct);
+                break;
+            default:
+                logger.LogDebug("Ignoring Paystack event {Event}", payload.Event);
+                break;
+        }
+    }
+
+    private async Task HandleChargeSuccessAsync(JsonElement data, CancellationToken ct)
+    {
+        var customerId = ExtractCustomerId(data);
+        if (customerId is null) return;
+
+        var verifyShape = JsonSerializer.Deserialize<PaystackVerifyData>(data.GetRawText());
+        if (verifyShape is null) return;
+
+        await ApplySuccessfulChargeAsync(customerId, verifyShape, ct);
+    }
+
+    private async Task HandleSubscriptionCreateAsync(JsonElement data, CancellationToken ct)
+    {
+        var customerId = ExtractCustomerId(data);
+        var subscriptionCode = data.TryGetProperty("subscription_code", out var codeEl)
+            ? codeEl.GetString()
+            : data.TryGetProperty("code", out var alt) ? alt.GetString() : null;
+        var emailToken = data.TryGetProperty("email_token", out var tokenEl) ? tokenEl.GetString() : null;
+
+        if (customerId is null || string.IsNullOrWhiteSpace(subscriptionCode)) return;
+
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        if (subscription is null) return;
+
+        subscription.PaystackSubscriptionCode = subscriptionCode;
+        if (!string.IsNullOrWhiteSpace(emailToken))
+            subscription.PaystackEmailToken = emailToken;
+        subscription.PaymentProvider = "paystack";
+        subscription.Status = "active";
+        await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+    }
+
+    private async Task HandleSubscriptionDisabledAsync(JsonElement data, CancellationToken ct)
+    {
+        var subscriptionCode = data.TryGetProperty("subscription_code", out var codeEl)
+            ? codeEl.GetString()
+            : data.TryGetProperty("code", out var alt) ? alt.GetString() : null;
+        if (string.IsNullOrWhiteSpace(subscriptionCode)) return;
+
+        var subscription = await Subscriptions
+            .Find(s => s.PaystackSubscriptionCode == subscriptionCode)
+            .FirstOrDefaultAsync(ct);
+        if (subscription is null) return;
+
+        subscription.Status = "cancelled";
+        await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+
+        var properties = await Properties.Find(p => p.CustomerId == subscription.CustomerId).ToListAsync(ct);
+        foreach (var property in properties)
+        {
+            property.SubscriptionStatus = "paused";
+            await Properties.ReplaceOneAsync(p => p.Id == property.Id, property, cancellationToken: ct);
+        }
+    }
+
+    private async Task HandlePaymentFailedAsync(JsonElement data, CancellationToken ct)
+    {
+        var customerId = ExtractCustomerId(data);
+        if (customerId is null) return;
+
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        if (subscription is null) return;
+
+        subscription.Status = "payment_failed";
+        await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+    }
+
+    private async Task ApplySuccessfulChargeAsync(string customerId, PaystackVerifyData charge, CancellationToken ct)
+    {
+        var customer = await Customers.Find(c => c.Id == customerId).FirstOrDefaultAsync(ct);
+        var subscription = await Subscriptions.Find(s => s.CustomerId == customerId).FirstOrDefaultAsync(ct);
+        if (subscription is null) return;
+
+        if (charge.Customer?.CustomerCode is not null)
+        {
+            if (customer is not null)
+            {
+                customer.PaystackCustomerCode = charge.Customer.CustomerCode;
+                await Customers.ReplaceOneAsync(c => c.Id == customer.Id, customer, cancellationToken: ct);
+            }
+        }
+
+        subscription.PaymentProvider = "paystack";
+        subscription.Status = "active";
+        subscription.PaymentMethod = FormatPaymentMethod(charge.Authorization);
+        if (charge.Plan?.PlanCode is not null)
+            subscription.PaystackPlanCode = charge.Plan.PlanCode;
+
+        var nextBilling = DateTime.UtcNow.AddMonths(3);
+        subscription.NextBillingDate = nextBilling.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        await Subscriptions.ReplaceOneAsync(s => s.Id == subscription.Id, subscription, cancellationToken: ct);
+
+        var propertyId = ExtractMetadata(charge.Metadata, "property_id");
+        if (!string.IsNullOrWhiteSpace(propertyId))
+        {
+            var property = await Properties
+                .Find(p => p.Id == propertyId && p.CustomerId == customerId)
+                .FirstOrDefaultAsync(ct);
+            if (property is not null)
+            {
+                property.SubscriptionStatus = "active";
+                if (string.IsNullOrWhiteSpace(property.PlanName))
+                    property.PlanName = subscription.PlanName;
+                await Properties.ReplaceOneAsync(p => p.Id == property.Id, property, cancellationToken: ct);
+            }
+        }
+        else
+        {
+            var pending = await Properties
+                .Find(p => p.CustomerId == customerId && p.SubscriptionStatus == "setup_required")
+                .ToListAsync(ct);
+            foreach (var property in pending)
+            {
+                property.SubscriptionStatus = "active";
+                await Properties.ReplaceOneAsync(p => p.Id == property.Id, property, cancellationToken: ct);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(charge.Reference))
+        {
+            var exists = await Payments.Find(p => p.PaystackReference == charge.Reference).AnyAsync(ct);
+            if (!exists)
+            {
+                var amount = charge.Amount > 0 ? charge.Amount / 100m : subscription.PricePerVisit;
+                await Payments.InsertOneAsync(new PaymentDocument
+                {
+                    Id = $"pay-{Guid.NewGuid():N}"[..12],
+                    CustomerId = customerId,
+                    Date = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    Description = charge.Plan?.Name ?? subscription.PlanName,
+                    Amount = amount,
+                    Status = "paid",
+                    PaystackReference = charge.Reference,
+                    PaymentProvider = "paystack",
+                }, cancellationToken: ct);
+            }
+        }
+    }
+
+    private static string? ExtractCustomerId(JsonElement data)
+    {
+        if (data.TryGetProperty("metadata", out var metadata))
+        {
+            var fromMeta = ExtractMetadata(metadata, "customer_id");
+            if (!string.IsNullOrWhiteSpace(fromMeta)) return fromMeta;
+        }
+
+        if (data.TryGetProperty("customer", out var customer) &&
+            customer.TryGetProperty("metadata", out var customerMeta))
+        {
+            var fromMeta = ExtractMetadata(customerMeta, "customer_id");
+            if (!string.IsNullOrWhiteSpace(fromMeta)) return fromMeta;
+        }
+
+        return null;
+    }
+
+    private static string? ExtractMetadata(JsonElement metadata, string key)
+    {
+        if (metadata.ValueKind == JsonValueKind.Object && metadata.TryGetProperty(key, out var direct))
+            return direct.GetString();
+
+        if (metadata.ValueKind == JsonValueKind.Object && metadata.TryGetProperty("custom_fields", out var fields))
+        {
+            foreach (var field in fields.EnumerateArray())
+            {
+                if (field.TryGetProperty("variable_name", out var name) &&
+                    string.Equals(name.GetString(), key, StringComparison.OrdinalIgnoreCase) &&
+                    field.TryGetProperty("value", out var value))
+                    return value.GetString();
+            }
+        }
+
+        return null;
+    }
+
+    private static int ResolveAmountCents(SubscriptionDocument subscription, PropertyDocument? property)
+    {
+        var amount = property?.PricePerClean ?? subscription.PricePerVisit;
+        if (amount <= 0)
+            amount = subscription.AnnualPrice > 0 ? subscription.AnnualPrice / 4 : 499;
+
+        return (int)Math.Round(amount * 100, MidpointRounding.AwayFromZero);
+    }
+
+    private static string FormatPaymentMethod(PaystackAuthorizationData? auth)
+    {
+        if (auth is null) return "Paystack";
+        if (!string.IsNullOrWhiteSpace(auth.CardType) && !string.IsNullOrWhiteSpace(auth.Last4))
+            return $"{auth.CardType} •••• {auth.Last4}";
+        if (!string.IsNullOrWhiteSpace(auth.Brand) && !string.IsNullOrWhiteSpace(auth.Last4))
+            return $"{auth.Brand} •••• {auth.Last4}";
+        if (!string.IsNullOrWhiteSpace(auth.Channel))
+            return $"Paystack ({auth.Channel})";
+        return "Paystack";
+    }
+
+    private bool VerifySignature(string rawBody, string? signature)
+    {
+        if (string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.SecretKey))
+            return false;
+
+        using var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(_options.SecretKey));
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawBody));
+        var computed = Convert.ToHexString(hash).ToLowerInvariant();
+        return string.Equals(computed, signature, StringComparison.OrdinalIgnoreCase);
+    }
+}

@@ -1,0 +1,157 @@
+@if (open()) {
+  <div class="reschedule-backdrop" (click)="close()">
+    <aside class="reschedule-drawer" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="drawer-header">
+        <div class="drawer-header-top">
+          <button type="button" class="back-link" (click)="close()">
+            <app-icon name="arrow-left" [size]="16" />
+            Back
+          </button>
+          <h2>Reschedule booking</h2>
+          <button type="button" class="icon-btn drawer-close" aria-label="Close" (click)="close()">
+            <app-icon name="close" [size]="20" />
+          </button>
+        </div>
+      </header>
+
+      <div class="drawer-body" #drawerBody>
+        @if (loading()) {
+          <app-loading-state />
+        } @else {
+          @if (booking(); as b) {
+          <p class="drawer-intro">Select a new date and time for your booking. You can reschedule up to 48 hours before your appointment.</p>
+
+          <div class="current-booking card">
+            <div class="current-icon">
+              <app-icon name="calendar" [size]="20" />
+            </div>
+            <div class="current-info">
+              <strong>{{ propertyName(b) }}, {{ b.propertyAddress.split(',')[1]?.trim() }}</strong>
+              <span>{{ b.serviceType }}</span>
+            </div>
+            <div class="current-meta">
+              <div><span>Current date</span><strong>{{ b.date | date: 'd MMM yyyy' }}</strong></div>
+              <div><span>Current time</span><strong>{{ b.timeSlot }}</strong></div>
+              <span class="status-pill status-confirmed"><span class="status-dot"></span>Confirmed</span>
+            </div>
+          </div>
+
+          <div class="policy-banner">
+            <app-icon name="support" [size]="16" />
+            <span>You can reschedule up to 48 hours before your appointment without a fee.</span>
+          </div>
+
+          <div class="reschedule-grid">
+            <section>
+              <h3>1. Select a new date</h3>
+              <div class="card calendar-card">
+                <h4>June 2026</h4>
+                <div class="cal-weekdays">
+                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+                </div>
+                <div class="cal-grid">
+                  @for (cell of calendarDays(); track $index) {
+                    @if (cell.day) {
+                      <button
+                        type="button"
+                        class="cal-day"
+                        [class.cal-available]="cell.available"
+                        [class.cal-current]="cell.isCurrent"
+                        [class.cal-selected]="selectedDate() === cell.dateKey"
+                        [disabled]="!cell.available"
+                        (click)="selectCalendarDay(cell)"
+                      >
+                        {{ cell.day }}
+                      </button>
+                    } @else {
+                      <span class="cal-day cal-empty"></span>
+                    }
+                  }
+                </div>
+              </div>
+
+              @if (selectedDate()) {
+                <div class="policy-ok">
+                  <app-icon name="check-circle" [size]="16" />
+                  <span>Selected date is within the rescheduling policy.</span>
+                </div>
+              }
+
+              <div class="form-group">
+                <label class="form-label">Reason / special notes (optional)</label>
+                <textarea class="form-input" rows="3" maxlength="250" placeholder="Let us know if anything has changed..." [(ngModel)]="notes"></textarea>
+                <span class="char-count">{{ notes.length }} / 250</span>
+              </div>
+            </section>
+
+            <section>
+              <h3>2. Select a new time</h3>
+              <p class="time-heading">Available time windows for {{ selectedDate() | date: 'EEE, d MMM yyyy' }}</p>
+              @for (window of timeWindows; track window.id) {
+                <label class="time-option" [class.selected]="selectedTimeWindow() === window.id">
+                  <input
+                    type="radio"
+                    name="rescheduleTime"
+                    [value]="window.id"
+                    [checked]="selectedTimeWindow() === window.id"
+                    (change)="selectedTimeWindow.set(window.id)"
+                  />
+                  <span class="time-label">{{ window.label }}</span>
+                  <span class="time-range">{{ window.time }}</span>
+                  @if (selectedTimeWindow() === window.id) {
+                    <app-icon name="check" [size]="16" />
+                  }
+                </label>
+              }
+              <p class="timezone-note">All times are in South Africa Standard Time (SAST).</p>
+            </section>
+          </div>
+
+          <section class="review-section">
+            <h3>3. Review your changes</h3>
+            <div class="review-compare">
+              <div class="review-card card">
+                <span class="review-label">Current booking</span>
+                <strong>{{ b.date | date: 'EEE, d MMM yyyy' }}</strong>
+                <span>{{ b.timeSlot }}</span>
+                <span class="review-sub">{{ propertyName(b) }}</span>
+              </div>
+              <div class="review-arrow">
+                <app-icon name="chevron-right" [size]="20" />
+              </div>
+              <div class="review-card card review-card-new">
+                <span class="review-label">New booking</span>
+                <strong>{{ selectedDate() | date: 'EEE, d MMM yyyy' }}</strong>
+                <span>{{ selectedTimeLabel() }}</span>
+                <span class="review-sub">{{ propertyName(b) }}</span>
+              </div>
+            </div>
+          </section>
+
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          }
+        }
+      </div>
+
+      @if (booking() && !loading()) {
+        <footer class="drawer-footer">
+          <button type="button" class="btn btn-outline btn-block" (click)="close()">Keep current booking</button>
+          <button
+            type="button"
+            class="btn btn-primary btn-block"
+            [disabled]="submitting() || !selectedDate()"
+            (click)="confirmReschedule()"
+          >
+            {{ submitting() ? 'Updating...' : 'Confirm reschedule' }}
+          </button>
+          <p class="footer-note">
+            <app-icon name="check" [size]="14" />
+            We'll send you a confirmation once your booking has been updated.
+          </p>
+        </footer>
+      }
+    </aside>
+  </div>
+}

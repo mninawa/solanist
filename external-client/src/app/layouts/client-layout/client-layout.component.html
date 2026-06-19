@@ -1,0 +1,129 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="header-left">
+      <button type="button" class="icon-btn menu-btn" aria-label="Open menu" (click)="toggleMobileNav()">
+        <app-icon name="menu" [size]="20" />
+      </button>
+      <a routerLink="/client/dashboard" class="logo-link">
+        <app-logo size="sm" />
+      </a>
+    </div>
+
+    <nav class="pill-nav header-pill-nav">
+      @for (link of primaryNav; track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+          class="pill-link"
+        >
+          {{ link.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="header-right">
+      <div class="dropdown-wrap">
+        <button type="button" class="icon-btn notif-btn" aria-label="Notifications" (click)="toggleNotifications($event)">
+          <app-icon name="bell" [size]="20" />
+          <span class="notif-dot"></span>
+        </button>
+        @if (notificationsOpen()) {
+          <div class="dropdown-panel" (click)="$event.stopPropagation()">
+            <p class="dropdown-title">Notifications</p>
+            <div class="notif-item">
+              <strong>Next clean in 7 days</strong>
+              <span>22 Jun 2026 · Hurlingham View</span>
+            </div>
+            <div class="notif-item">
+              <strong>Report ready</strong>
+              <span>Your March cleaning report is available.</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (user(); as u) {
+        <div class="dropdown-wrap desktop-only-user">
+          <button type="button" class="user-menu" (click)="toggleUserMenu($event)">
+            <span class="user-avatar">{{ u.firstName.charAt(0) }}</span>
+          </button>
+          @if (userMenuOpen()) {
+            <div class="dropdown-panel dropdown-right" (click)="$event.stopPropagation()">
+              <p class="dropdown-user">{{ u.firstName }} {{ u.lastName }}</p>
+              @for (link of userNav; track link.path) {
+                <a [routerLink]="link.path" class="dropdown-item" (click)="closeMobileNav()">
+                  <app-icon [name]="link.icon" [size]="16" /> {{ link.label }}
+                </a>
+              }
+              <button type="button" class="dropdown-item" (click)="logout()">
+                <app-icon name="logout" [size]="16" /> Sign out
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </header>
+
+  <aside class="mobile-drawer" [class.drawer-open]="mobileNavOpen()">
+    <div class="drawer-header">
+      <app-logo size="sm" />
+      <button type="button" class="icon-btn" aria-label="Close menu" (click)="closeMobileNav()">
+        <app-icon name="close" [size]="20" />
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <p class="drawer-section-label">Menu</p>
+      @for (link of primaryNav; track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+          class="drawer-link"
+          (click)="closeMobileNav()"
+        >
+          <app-icon [name]="link.icon" [size]="18" />
+          {{ link.label }}
+        </a>
+      }
+      <p class="drawer-section-label">Account</p>
+      @for (link of userNav; track link.path) {
+        <a [routerLink]="link.path" class="drawer-link" (click)="closeMobileNav()">
+          <app-icon [name]="link.icon" [size]="18" />
+          {{ link.label }}
+        </a>
+      }
+      <button type="button" class="drawer-link" (click)="logout()">
+        <app-icon name="logout" [size]="18" />
+        Sign out
+      </button>
+    </nav>
+  </aside>
+
+  @if (mobileNavOpen()) {
+    <button type="button" class="drawer-backdrop visible" aria-label="Close menu" (click)="closeMobileNav()"></button>
+  }
+
+  <main class="content-area has-bottom-nav">
+    <router-outlet />
+  </main>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    @for (link of bottomNav; track link.path) {
+      <a
+        [routerLink]="link.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+        class="bottom-nav-item"
+      >
+        <app-icon [name]="link.icon" [size]="20" />
+        <span>{{ link.label }}</span>
+      </a>
+    }
+    <button type="button" class="bottom-nav-item" (click)="toggleMobileNav()" aria-label="More">
+      <app-icon name="menu" [size]="20" />
+      <span>More</span>
+    </button>
+  </nav>
+</div>

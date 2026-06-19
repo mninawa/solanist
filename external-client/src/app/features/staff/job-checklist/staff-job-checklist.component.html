@@ -1,0 +1,30 @@
+@if (ws.job(); as j) {
+  <section class="step-section card">
+    <div class="step-section-head">
+      <div>
+        <h2>Cleaning Checklist</h2>
+        <p class="step-hint">Complete every item before continuing to after photos.</p>
+      </div>
+      <span class="required-badge">{{ completedCount() }} / {{ ws.checklistDraft().length }} completed</span>
+    </div>
+
+    <div class="staff-progress-bar checklist-progress">
+      <div class="fill" [style.width.%]="progressPct()"></div>
+    </div>
+
+    <div class="checklist-wrap">
+      <app-checklist
+        [items]="ws.checklistDraft()"
+        [showProgress]="false"
+        (itemsChange)="onChecklistChange($event)"
+      />
+    </div>
+
+    @if (allComplete()) {
+      <div class="success-banner">
+        <app-icon name="check-circle" [size]="16" />
+        All tasks completed successfully
+      </div>
+    }
+  </section>
+}

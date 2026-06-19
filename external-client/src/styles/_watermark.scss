@@ -1,0 +1,18 @@
+.felidaen-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/assets/felidaen-watermark.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: min(72vw, 560px) auto;
+  opacity: 0.09;
+  mix-blend-mode: multiply;
+}
+
+.app-shell:has(.admin-app-shell) .felidaen-watermark {
+  opacity: 0.06;
+  mix-blend-mode: soft-light;
+  filter: brightness(1.15);
+}

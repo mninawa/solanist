@@ -1,0 +1,91 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: GitHub → Render Dashboard → New → Blueprint → connect this repo.
+# CI: GitHub Actions (.github/workflows/ci.yml) validates builds on every PR/push.
+# CD: Render auto-deploys `main` when connected (no separate deploy hook required).
+
+services:
+  - type: web
+    name: solanist-bff
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    branch: main
+    dockerfilePath: backend/api/src/Solanist.Bff.External/Dockerfile
+    dockerContext: backend/api
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Mongo__DatabaseName
+        value: solanist
+      - key: Mongo__DemoCustomerId
+        value: cust-001
+      - key: Mongo__ConnectionString
+        sync: false
+      - key: Auth__SecretKey
+        generateValue: true
+      - key: Auth__Issuer
+        value: solanist
+      - key: Auth__Audience
+        value: solanist-portal
+      - key: Auth__AppBaseUrl
+        fromService:
+          type: web
+          name: solanist-app
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: Auth__ExposeResetLinks
+        value: "false"
+      - key: Auth__DisablePasswordLogin
+        value: "true"
+      - key: Auth__AllowSelfSignup
+        value: "false"
+      - key: Auth__AllowMockGoogleLogin
+        value: "false"
+      - key: Auth__GoogleClientId
+        sync: false
+      - key: Webhooks__BarkSecret
+        generateValue: true
+      - key: S3__BucketName
+        value: solanist
+      - key: S3__Region
+        value: eu-west-1
+      - key: S3__AccessKeyId
+        sync: false
+      - key: S3__SecretAccessKey
+        sync: false
+      - key: S3__PublicBaseUrl
+        sync: false
+      - key: S3__PublicRead
+        value: "true"
+      - key: Paystack__SecretKey
+        sync: false
+      - key: Paystack__PublicKey
+        sync: false
+      - key: Paystack__CallbackUrl
+        sync: false
+      - key: Paystack__Plans__Quarterly Solar Care
+        sync: false
+      - key: Email__PostmarkServerToken
+        sync: false
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__FromName
+        value: Solanist Solar Care
+      - key: WhatsApp__ApiKey
+        sync: false
+
+  - type: web
+    name: solanist-app
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    branch: main
+    dockerfilePath: external-client/Dockerfile
+    dockerContext: external-client
+    healthCheckPath: /
+    envVars:
+      - key: BFF_UPSTREAM
+        fromService:
+          type: web
+          name: solanist-bff
+          envVarKey: RENDER_EXTERNAL_URL

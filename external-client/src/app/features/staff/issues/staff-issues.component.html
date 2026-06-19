@@ -1,0 +1,32 @@
+<div class="page-container staff-page">
+  <header class="page-header">
+    <h1 class="page-title">Issues</h1>
+    <p class="page-subtitle">Reported job issues and access problems.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (!issues().length) {
+    <div class="card empty-card">
+      <app-icon name="check-circle" [size]="32" />
+      <p>No open issues on today's jobs.</p>
+      <a routerLink="/staff/jobs" class="btn btn-outline btn-sm">View all jobs</a>
+    </div>
+  } @else {
+    <div class="issue-list">
+      @for (job of issues(); track job.id) {
+        <article class="card issue-card">
+          <div class="issue-card-head">
+            <strong>{{ job.address }}</strong>
+            <span class="staff-status-badge status-issue">Issue</span>
+          </div>
+          <p class="issue-meta">{{ job.customerName }} · {{ job.scheduledTime }}</p>
+          @if (job.issue; as issue) {
+            <p class="issue-desc">{{ issueLabel(issue) }} — {{ issue.description }}</p>
+          }
+          <a [routerLink]="['/staff/jobs', job.id]" class="btn btn-outline btn-sm">View job</a>
+        </article>
+      }
+    </div>
+  }
+</div>

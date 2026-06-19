@@ -1,0 +1,244 @@
+<div class="page-container">
+  <header class="page-header-row">
+    <div>
+      <h1 class="page-title">Plan & Subscriptions</h1>
+      <p class="page-subtitle">Manage all your property plans and billing in one place. Subscriptions are billed via Paystack.</p>
+    </div>
+    <div class="header-actions">
+      @if (portfolio(); as pf) {
+        <div class="billing-mode-select">
+          <app-icon name="payment" [size]="16" />
+          <label class="sr-only" for="billing-mode">Billing mode</label>
+          <select
+            id="billing-mode"
+            class="form-input billing-select"
+            [value]="pf.billingMode"
+            (change)="setBillingMode($any($event.target).value)"
+          >
+            <option value="combined">Combined invoice</option>
+            <option value="split">Separate invoices per property</option>
+          </select>
+        </div>
+      }
+      <a routerLink="/client/payments" class="btn btn-outline btn-sm">Billing history</a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (checkoutError()) {
+      <div class="paystack-alert card">{{ checkoutError() }}</div>
+    }
+
+    @if (paystackEnabled() && setupRequiredProperties().length) {
+      <div class="paystack-setup card">
+        <div>
+          <strong>Complete Paystack setup</strong>
+          <p>{{ setupRequiredProperties().length }} propert{{ setupRequiredProperties().length === 1 ? 'y' : 'ies' }} still need an active subscription payment.</p>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          [disabled]="!!checkoutLoading()"
+          (click)="startPaystackCheckout()"
+        >
+          {{ checkoutLoading() ? 'Opening Paystack…' : 'Pay with Paystack' }}
+        </button>
+      </div>
+    }
+
+    <div class="summary-grid">
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-home">
+          <app-icon name="home" [size]="20" />
+        </div>
+        <div class="stat-label">Total properties</div>
+        <div class="stat-value">{{ properties().length }}</div>
+        <p class="stat-meta stat-meta-success">{{ activeProperties().length }} active</p>
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-shield">
+          <app-icon name="check-circle" [size]="20" />
+        </div>
+        <div class="stat-label">Active subscriptions</div>
+        <div class="stat-value">{{ activeProperties().length }}</div>
+        <p class="stat-meta stat-meta-success">All plans are active</p>
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-calendar">
+          <app-icon name="calendar" [size]="20" />
+        </div>
+        <div class="stat-label">Next clean (earliest)</div>
+        @if (nextClean(); as prop) {
+          <div class="stat-value stat-value-sm">{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</div>
+          <p class="stat-meta">{{ prop.address }}</p>
+        } @else {
+          <div class="stat-value stat-value-sm">—</div>
+          <p class="stat-meta">No cleans scheduled</p>
+        }
+      </div>
+
+      @if (portfolio(); as pf) {
+        <div class="stat-card stat-card-icon">
+          <div class="stat-icon stat-icon-wallet">
+            <app-icon name="wallet" [size]="20" />
+          </div>
+          <div class="stat-label">Upcoming amount</div>
+          <div class="stat-value">{{ pf.upcomingBillingTotal | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</div>
+          <p class="stat-meta">Next billing: {{ pf.nextBillingDate | date: 'd MMM yyyy' }}</p>
+        </div>
+      }
+    </div>
+
+    @if (portfolio(); as pf) {
+      <div class="billing-preference card">
+        <h3>Billing preference</h3>
+        <div class="billing-options">
+          <label class="billing-option" [class.selected]="pf.billingMode === 'combined'">
+            <input
+              type="radio"
+              name="billingMode"
+              value="combined"
+              [checked]="pf.billingMode === 'combined'"
+              (change)="setBillingMode('combined')"
+            />
+            <span>Combined invoice</span>
+            <small>One invoice for all properties</small>
+          </label>
+          <label class="billing-option" [class.selected]="pf.billingMode === 'split'">
+            <input
+              type="radio"
+              name="billingMode"
+              value="split"
+              [checked]="pf.billingMode === 'split'"
+              (change)="setBillingMode('split')"
+            />
+            <span>Separate invoices per property</span>
+            <small>Individual invoice per property</small>
+          </label>
+        </div>
+      </div>
+    }
+
+    <div class="section-header">
+      <h2>Your property subscriptions</h2>
+      <a routerLink="/client/properties" class="btn btn-primary btn-sm">
+        <app-icon name="plus" [size]="14" />
+        Add a property
+      </a>
+    </div>
+
+    <div class="subscription-cards">
+      @for (prop of activeProperties(); track prop.id) {
+        <div class="subscription-card card">
+          <img [src]="displayImage(prop)" [alt]="prop.address" class="prop-thumb" (error)="onImageError(prop.id)" />
+          <div class="prop-main">
+            <div class="prop-title-row">
+              <div>
+                <h3>{{ prop.address }}</h3>
+                <p class="prop-location">{{ cityLabel(prop) }}</p>
+              </div>
+              <span class="badge badge-success">Active</span>
+            </div>
+
+            <div class="prop-stats">
+              <span>{{ prop.panelCount }} panels</span>
+              <span>{{ prop.systemSizeKw }} kW system</span>
+            </div>
+
+            <div class="plan-block">
+              <strong>{{ prop.planName }}</strong>
+              <div class="plan-meta">
+                <span>{{ prop.pricePerClean | currency: 'ZAR':'symbol-narrow':'1.0-0' }} / clean</span>
+                <span>{{ prop.planFrequency }}</span>
+                <span>{{ prop.visitsPerYear }} cleans per year</span>
+              </div>
+            </div>
+
+            <div class="schedule-block">
+              <div class="schedule-row">
+                <span>Next clean</span>
+                <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }} · {{ prop.nextCleanTimeSlot }}</strong>
+              </div>
+              <div class="visits-row">
+                <span>Visits remaining</span>
+                <strong>{{ prop.visitsRemaining }} of {{ prop.visitsPerYear }}</strong>
+              </div>
+              <div class="visits-bar">
+                <div class="visits-fill" [style.width.%]="visitsPercent(prop)"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prop-actions">
+            <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-sm">
+              <app-icon name="settings" [size]="14" />
+              Manage plan
+            </a>
+            <button type="button" class="btn btn-outline btn-sm" (click)="openReschedule(prop.id)">
+              <app-icon name="calendar" [size]="14" />
+              Reschedule
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (portfolio(); as pf) {
+      <div class="combined-invoice card">
+        <div class="invoice-left">
+          <div class="invoice-doc-icon">
+            <app-icon name="payment" [size]="22" />
+          </div>
+          <div>
+            <strong>Next billing date: {{ pf.nextBillingDate | date: 'd MMM yyyy' }}</strong>
+            <p>Covers all active subscriptions</p>
+          </div>
+        </div>
+
+        <div class="invoice-lines">
+          @for (line of pf.invoicePreview; track line.propertyId; let i = $index) {
+            <div class="invoice-line">
+              <span class="invoice-dot" [class]="invoiceDotClass[i % invoiceDotClass.length]"></span>
+              <span class="invoice-desc">{{ line.propertyName }} — {{ line.planName }}</span>
+              <span class="invoice-amount">{{ line.amount | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="invoice-total">
+          <span class="total-label">Total amount</span>
+          <strong class="total-value">{{ pf.upcomingBillingTotal | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
+          <span class="vat-note">Includes VAT</span>
+          <button type="button" class="btn btn-primary btn-block">View invoice preview</button>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="setBillingMode(pf.billingMode === 'combined' ? 'split' : 'combined')">
+            Change billing mode
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="card billing-history">
+      <h3>Billing history</h3>
+      <div class="billing-list">
+        @for (payment of payments(); track payment.id) {
+          <div class="billing-row">
+            <span class="billing-date">{{ payment.date | date: 'd MMM yyyy' }}</span>
+            <span class="billing-desc">{{ payment.description }}</span>
+            <span class="billing-amount">{{ payment.amount | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</span>
+            <span class="badge badge-success">Paid</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<app-client-booking-reschedule
+  [open]="!!rescheduleBookingId()"
+  [bookingId]="rescheduleBookingId()"
+  (closed)="closeReschedule()"
+/>

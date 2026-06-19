@@ -1,0 +1,197 @@
+<div class="job-workspace">
+  @if (ws.loading()) {
+    <app-loading-state />
+  } @else if (!ws.job()) {
+    <p class="empty-msg">Job not found.</p>
+  } @else {
+    @if (ws.job(); as j) {
+    <div class="workspace-top-bar">
+      <div class="workspace-greeting">
+        <h2>Good morning, {{ staffFirstName() }}! 👋</h2>
+        <p>You have {{ remainingJobs() }} jobs remaining today.</p>
+      </div>
+      <div class="workspace-top-meta">
+        <span class="weather-pill">
+          <app-icon name="sun" [size]="16" />
+          21°C Partly cloudy
+        </span>
+        <button type="button" class="icon-btn notif-btn" aria-label="Notifications">
+          <app-icon name="bell" [size]="20" />
+          <span class="notif-dot"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-nav-row">
+      <a routerLink="/staff/dashboard" class="back-text-link">
+        <app-icon name="arrow-left" [size]="16" />
+        Back to Today's Jobs
+      </a>
+      <a routerLink="/staff/jobs" class="btn btn-primary btn-sm">Back to Jobs</a>
+    </div>
+
+    <div class="job-workspace-header">
+      <div class="job-title-row">
+        <h1>{{ j.serviceType }}</h1>
+        <span class="progress-badge">{{ ws.inProgressLabel() }}</span>
+      </div>
+
+      <div class="job-meta-bar">
+        <span>
+          <app-icon name="calendar" [size]="14" />
+          {{ j.scheduledDate | date: 'd MMM yyyy' }}, {{ j.scheduledTime }}
+        </span>
+        <span>
+          <app-icon name="map-pin" [size]="14" />
+          {{ j.address }}, {{ j.city }}, {{ j.postcode }}
+        </span>
+        <span>
+          <app-icon name="subscription" [size]="14" />
+          {{ j.planType }}
+        </span>
+        <span>
+          <app-icon name="sun" [size]="14" />
+          {{ j.panelCount }} Panels · {{ j.systemSizeKw }} kW · {{ j.roofType }} · {{ j.accessShort }}
+        </span>
+      </div>
+    </div>
+
+    @if (ws.isWorkflowView()) {
+      <nav class="workflow-stepper" aria-label="Job progress">
+        @for (step of workflowSteps; track step.id) {
+          <div class="stepper-item" [class]="stepState(step.id)">
+            <div class="stepper-circle">
+              @if (stepState(step.id) === 'done') {
+                <app-icon name="check" [size]="14" />
+              } @else {
+                {{ step.stepNum }}
+              }
+            </div>
+            <span class="stepper-label">{{ step.label }}</span>
+          </div>
+        }
+      </nav>
+    }
+
+    <div class="workspace-body" [class.has-sidebar]="ws.isWorkflowView()">
+      <div class="workspace-main">
+        <router-outlet />
+
+        @if (ws.isWorkflowView() && (ws.workflowRoute() !== 'complete' || !j.completedAt)) {
+          <div class="workspace-forms card">
+            <div class="form-block">
+              <label class="form-label" for="job-notes">Job Notes (Optional)</label>
+              <textarea
+                id="job-notes"
+                class="form-textarea"
+                rows="3"
+                maxlength="500"
+                placeholder="Side gate access used. Customer not home."
+                [ngModel]="ws.jobNotes()"
+                (ngModelChange)="ws.jobNotes.set($event)"
+              ></textarea>
+              <span class="char-hint">{{ ws.jobNotes().length }} / 500</span>
+            </div>
+
+            <div class="form-block issue-block">
+              <label class="form-label" for="issue-type">Quick Issue Report (Optional)</label>
+              <select
+                id="issue-type"
+                class="form-input"
+                [ngModel]="ws.issueType()"
+                (ngModelChange)="ws.issueType.set($event)"
+              >
+                <option value="none">No issues</option>
+                @for (opt of issueOptions; track opt[0]) {
+                  <option [value]="opt[0]">{{ opt[1] }}</option>
+                }
+              </select>
+              <textarea
+                class="form-textarea"
+                rows="2"
+                placeholder="Additional details..."
+                [ngModel]="ws.issueDetails()"
+                (ngModelChange)="ws.issueDetails.set($event)"
+              ></textarea>
+              <label class="checkbox-row">
+                <input type="checkbox" [ngModel]="ws.issueFollowUp()" (ngModelChange)="ws.issueFollowUp.set($event)" />
+                This issue requires follow up
+              </label>
+            </div>
+          </div>
+
+          <div class="workspace-footer">
+            <button type="button" class="btn btn-outline" (click)="ws.saveAndExit()">Save &amp; Exit</button>
+            @if (nextLabel(); as label) {
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="!ws.canProceed() || ws.proceeding()"
+                (click)="ws.proceed()"
+              >
+                {{ ws.proceeding() ? 'Saving...' : label }}
+                <app-icon name="chevron-right" [size]="16" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      @if (ws.isWorkflowView()) {
+        <aside class="workspace-sidebar">
+          <div class="sidebar-card card">
+            <h3>Job Summary</h3>
+            <dl class="sidebar-dl">
+              <div><dt>Job ID</dt><dd>{{ formatBookingId(j.bookingId) }}</dd></div>
+              <div><dt>Status</dt><dd>{{ j.checkedInAt ? 'Checked In' : 'Assigned' }}</dd></div>
+              @if (j.checkedInAt) {
+                <div><dt>Check-in</dt><dd>{{ j.checkedInAt | date: 'h:mm a' }}</dd></div>
+              }
+              @if (j.beforeKwhReading != null) {
+                <div><dt>Before kWh</dt><dd>{{ j.beforeKwhReading }} kWh</dd></div>
+              }
+              @if (j.afterKwhReading != null) {
+                <div><dt>After kWh</dt><dd>{{ j.afterKwhReading }} kWh</dd></div>
+              }
+              <div><dt>Technician</dt><dd>{{ technicianName() }}</dd></div>
+            </dl>
+            <a [routerLink]="['/staff/jobs', j.id]" class="btn btn-outline btn-sm btn-block">View Job Details</a>
+          </div>
+
+          <div class="sidebar-card card">
+            <h3>Customer</h3>
+            <strong>{{ j.customerName }}</strong>
+            <p class="sidebar-muted">{{ j.customerPhone }}</p>
+            <div class="sidebar-actions">
+              <a [href]="'tel:' + j.customerPhone" class="icon-action" aria-label="Call">
+                <app-icon name="phone" [size]="16" />
+              </a>
+              <a [href]="whatsAppLink(j.customerPhone)" target="_blank" class="icon-action" aria-label="WhatsApp">
+                <app-icon name="chat" [size]="16" />
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-card card">
+            <h3>Property Details</h3>
+            <p class="sidebar-muted">{{ j.panelCount }} Panels · {{ j.systemSizeKw }} kW</p>
+            <p class="sidebar-muted">{{ j.roofType }} · {{ j.accessShort }}</p>
+            <a [href]="mapsLink(j)" target="_blank" class="btn btn-outline btn-sm btn-block navigate-btn">
+              <app-icon name="map-pin" [size]="14" />
+              Navigate
+            </a>
+          </div>
+
+          <div class="safety-card">
+            <app-icon name="shield" [size]="18" />
+            <div>
+              <strong>Safety First</strong>
+              <p>Follow safety procedures and use PPE when working on roofs.</p>
+            </div>
+          </div>
+        </aside>
+      }
+    </div>
+    }
+  }
+</div>

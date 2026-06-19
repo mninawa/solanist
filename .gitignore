@@ -1,0 +1,24 @@
+.env
+*.env.local
+
+# Dependencies
+node_modules/
+
+# Frontend build output
+external-client/dist/
+
+# .NET
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Cursor
+.cursor/

@@ -1,0 +1,347 @@
+<div class="page-container">
+  <header class="page-top">
+    <a routerLink="/client/subscription" class="back-link">
+      <app-icon name="arrow-left" [size]="18" />
+      Back to plan & subscriptions
+    </a>
+    <div class="page-header">
+      <h1 class="page-title">Manage Plan</h1>
+      <p class="page-subtitle">View and manage your subscription for this property.</p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (planDetails()) {
+    <!-- Property selector -->
+    <div class="property-selector">
+      <div class="current-property card">
+        @if (planDetails()!.property.imageUrl && !hasImageError(planDetails()!.property.id)) {
+          <img
+            [src]="planDetails()!.property.imageUrl"
+            [alt]="planDetails()!.property.address"
+            class="prop-thumb"
+            (error)="onImageError(planDetails()!.property.id)"
+          />
+        } @else {
+          <div class="prop-thumb prop-thumb-fallback" aria-hidden="true">
+            <app-icon name="home" [size]="22" />
+          </div>
+        }
+        <div class="prop-info">
+          <span class="prop-label">Managing property</span>
+          <strong>{{ planDetails()!.property.address }}, {{ planDetails()!.property.city }}</strong>
+        </div>
+        <app-icon name="chevron-down" [size]="18" />
+      </div>
+      <div class="other-properties card">
+        <span class="prop-label">Other properties</span>
+        <div class="prop-avatars">
+          @for (prop of otherProperties(); track prop.id) {
+            <a
+              [routerLink]="['/client/properties', prop.id, 'plan']"
+              class="prop-avatar"
+              [title]="prop.address"
+            >
+              @if (prop.imageUrl && !hasImageError(prop.id)) {
+                <img [src]="prop.imageUrl" [alt]="prop.address" (error)="onImageError(prop.id)" />
+              } @else {
+                <app-icon name="home" [size]="16" />
+              }
+            </a>
+          }
+          <a routerLink="/client/properties" class="prop-avatar add" aria-label="Add property">
+            <app-icon name="plus" [size]="16" />
+          </a>
+        </div>
+      </div>
+    </div>
+
+    @if (activePlan(); as plan) {
+      <!-- Current plan hero -->
+      <div class="plan-hero">
+        <img [src]="plan.heroImageUrl" alt="" class="plan-hero-bg" />
+        <div class="plan-hero-content">
+          <div class="plan-hero-top">
+            <div>
+              <span class="plan-eyebrow">Current plan</span>
+              <h2>{{ plan.name }}</h2>
+              <p class="plan-since">
+                <span class="badge badge-active">{{ plan.status | titlecase }}</span>
+                @if (plan.planSince) {
+                  Plan since {{ plan.planSince | date: 'd MMM yyyy' }}
+                }
+              </p>
+            </div>
+            <button type="button" class="btn btn-hero-outline">
+              Change plan
+              <app-icon name="chevron-down" [size]="14" />
+            </button>
+          </div>
+
+          <div class="plan-stats">
+            <div class="plan-stat">
+              <strong>{{ plan.pricePerVisit | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
+              <span>Per clean</span>
+            </div>
+            <div class="plan-stat">
+              <strong>{{ plan.frequencyLabel }}</strong>
+              <span>Frequency</span>
+            </div>
+            <div class="plan-stat">
+              <strong>{{ plan.cleansPerYear }}</strong>
+              <span>Cleans per year</span>
+            </div>
+            <div class="plan-stat">
+              <strong>{{ plan.visitsRemaining }} of {{ plan.cleansPerYear }}</strong>
+              <span>Visits remaining</span>
+            </div>
+            <div class="plan-stat">
+              <strong>{{ plan.annualValue | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</strong>
+              <span>Annual value</span>
+            </div>
+          </div>
+
+          <div class="plan-actions">
+            <button type="button" class="btn btn-hero-primary">
+              <app-icon name="calendar" [size]="16" />
+              Reschedule next clean
+            </button>
+            <button type="button" class="btn btn-hero-outline">
+              <app-icon name="pause" [size]="16" />
+              Pause plan
+            </button>
+            <button type="button" class="btn btn-hero-outline">
+              <app-icon name="trash" [size]="16" />
+              Cancel plan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="main-column">
+          @if (activeCleaning(); as clean) {
+            <div class="card section-card">
+              <h3 class="section-title">Next cleaning</h3>
+              <div class="next-clean-grid">
+                <dl class="detail-list">
+                  <dt>Date</dt>
+                  <dd>{{ clean.date | date: 'd MMM yyyy' }}</dd>
+                  <dt>Time</dt>
+                  <dd>{{ clean.timeSlot }}</dd>
+                  <dt>Staff</dt>
+                  <dd>{{ clean.staffName ?? 'Not assigned yet' }}</dd>
+                  <dt>Address</dt>
+                  <dd>{{ clean.address }}</dd>
+                </dl>
+                <div class="mini-calendar">
+                  <div class="cal-header">{{ calendarMonthLabel() }}</div>
+                  <div class="cal-weekdays">
+                    <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+                  </div>
+                  <div class="cal-grid">
+                    @for (cell of calendarCells(); track $index) {
+                      @if (cell.day) {
+                        <span
+                          class="cal-day"
+                          [class.cal-today]="cell.isToday"
+                          [class.cal-highlight]="cell.isHighlighted"
+                        >
+                          {{ cell.day }}
+                        </span>
+                      } @else {
+                        <span class="cal-day cal-empty"></span>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm">Reschedule</button>
+            </div>
+          }
+
+          @if (activeBilling(); as bill) {
+            <div class="card section-card">
+              <h3 class="section-title">Billing</h3>
+              <dl class="detail-list detail-list-wide">
+                <dt>Billing mode</dt>
+                <dd>{{ bill.mode }}</dd>
+                <dt>Plan price</dt>
+                <dd>{{ bill.planPrice | currency: 'ZAR':'symbol-narrow':'1.0-0' }} per clean</dd>
+                <dt>Next invoice date</dt>
+                <dd>{{ bill.nextInvoiceDate | date: 'd MMM yyyy' }}</dd>
+                <dt>Payment method</dt>
+                <dd class="payment-row">
+                  <app-icon name="payment" [size]="16" />
+                  {{ bill.paymentMethod }}
+                  @if (paystackEnabled()) {
+                    <button type="button" class="text-link" [disabled]="billingBusy()" (click)="changePaymentMethod()">
+                      Change via Paystack
+                    </button>
+                  }
+                </dd>
+                <dt>Last payment</dt>
+                <dd class="payment-last">
+                  {{ bill.lastPaymentDate | date: 'd MMM yyyy' }}
+                  <span class="badge badge-success">Paid</span>
+                </dd>
+              </dl>
+              <div class="card-actions">
+                <a routerLink="/client/payments" class="btn btn-outline btn-sm">View invoices</a>
+                @if (paystackEnabled()) {
+                  <button type="button" class="btn btn-outline btn-sm" [disabled]="billingBusy()" (click)="changePaymentMethod()">
+                    Update payment method
+                  </button>
+                }
+              </div>
+              @if (billingMessage()) {
+                <p class="billing-message">{{ billingMessage() }}</p>
+              }
+            </div>
+          }
+
+          <div class="card section-card">
+            <div class="section-header">
+              <h3 class="section-title">Recent cleaning reports</h3>
+              <a routerLink="/client/reports" class="link-action">
+                View all reports
+                <app-icon name="chevron-right" [size]="14" />
+              </a>
+            </div>
+            <div class="report-grid">
+              @for (report of planDetails()!.recentReports; track report.id) {
+                <a [routerLink]="['/client/reports', report.id]" class="report-card">
+                  @if (report.thumbnailUrl) {
+                    <img [src]="report.thumbnailUrl" alt="Report thumbnail" />
+                  }
+                  <div class="report-card-body">
+                    <span>{{ report.completedAt | date: 'd MMM yyyy' }}</span>
+                    <span class="badge badge-success">Completed</span>
+                    <app-icon name="download" [size]="16" />
+                  </div>
+                </a>
+              }
+              @if (activeCleaning(); as next) {
+                <div class="report-card report-placeholder">
+                  <div class="placeholder-inner">
+                    <app-icon name="report" [size]="24" />
+                    <strong>Next report</strong>
+                    <span>Due {{ next.date | date: 'd MMM yyyy' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="side-column">
+          <div class="card section-card benefits-card">
+            <h3 class="section-title">Plan benefits</h3>
+            <ul class="benefits-list">
+              @for (benefit of plan.features; track benefit) {
+                <li>
+                  <app-icon name="check-circle" [size]="16" />
+                  {{ benefit }}
+                </li>
+              }
+            </ul>
+            <div class="benefits-illustration" aria-hidden="true">
+              <svg viewBox="0 0 80 60" fill="none">
+                <path d="M40 8L8 28v24h24V38h16v14h24V28L40 8z" stroke="#2563eb" stroke-width="1.5" opacity="0.3" />
+                <rect x="28" y="38" width="8" height="6" rx="1" fill="#2563eb" opacity="0.2" />
+                <rect x="38" y="38" width="8" height="6" rx="1" fill="#2563eb" opacity="0.2" />
+                <rect x="48" y="38" width="8" height="6" rx="1" fill="#2563eb" opacity="0.2" />
+              </svg>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm btn-block">View all benefits</button>
+          </div>
+
+          @if (activeUsage(); as usage) {
+            <div class="card section-card">
+              <h3 class="section-title">Usage this year</h3>
+              <div class="usage-ring-wrap">
+                <div class="usage-ring" [style.--pct]="usagePercent()">
+                  <span class="usage-pct">{{ usagePercent() }}%</span>
+                </div>
+                <p class="usage-caption">
+                  {{ usage.cleansCompleted }} of {{ usage.cleansTotal }} cleans completed
+                </p>
+              </div>
+              <dl class="usage-stats">
+                <dt>Cleans completed</dt><dd>{{ usage.cleansCompleted }}</dd>
+                <dt>Cleans remaining</dt>
+                <dd>{{ usage.cleansTotal - usage.cleansCompleted }}</dd>
+                <dt>Reports available</dt><dd>{{ usage.reportsAvailable }}</dd>
+                <dt>Next billing</dt>
+                <dd>{{ usage.nextBillingAmount | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</dd>
+              </dl>
+              <div class="renew-banner">
+                <app-icon name="check-circle" [size]="16" />
+                Your plan renews on {{ usage.renewDate | date: 'd MMM yyyy' }}
+              </div>
+            </div>
+          }
+
+          <div class="card section-card changes-card">
+            <h3 class="section-title">Need to make a change?</h3>
+            <button type="button" class="change-item">
+              <app-icon name="pause" [size]="18" />
+              <span>Pause your plan</span>
+              <app-icon name="chevron-right" [size]="16" />
+            </button>
+            <button type="button" class="change-item" [disabled]="billingBusy()" (click)="cancelPlan()">
+              <app-icon name="trash" [size]="18" />
+              <span>Cancel your plan (Paystack)</span>
+              <app-icon name="chevron-right" [size]="16" />
+            </button>
+            <div class="cancel-warning">
+              Canceling your plan will stop all future bookings. You will still have access to past reports.
+            </div>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="card assign-plan-card">
+        <div class="assign-icon" aria-hidden="true">
+          <app-icon name="calendar" [size]="32" />
+        </div>
+        <span class="assign-eyebrow">Get started</span>
+        <h2>No plan assigned yet</h2>
+        <p>
+          Choose a cleaning plan for <strong>{{ planDetails()!.property.address }}</strong> and we'll
+          schedule your first professional clean — complete with reminders and photo reports.
+        </p>
+
+        <ul class="assign-benefits">
+          @for (benefit of planBenefits.slice(0, 4); track benefit) {
+            <li>
+              <app-icon name="check-circle" [size]="16" />
+              {{ benefit }}
+            </li>
+          }
+        </ul>
+
+        <div class="assign-actions">
+          <a routerLink="/client/subscription" class="btn btn-primary btn-lg">
+            <app-icon name="plus" [size]="16" />
+            Assign a plan
+          </a>
+          <a routerLink="/client/subscription" class="btn btn-outline btn-lg">Compare plans</a>
+        </div>
+      </div>
+    }
+
+    <div class="help-footer">
+      <span>Questions about your plan? We're here to help.</span>
+      <a
+        [href]="'https://wa.me/' + config.supportWhatsApp"
+        target="_blank"
+        class="btn btn-primary"
+      >
+        <app-icon name="chat" [size]="18" />
+        Chat on WhatsApp
+      </a>
+    </div>
+  }
+</div>

@@ -1,0 +1,64 @@
+<div class="page-container">
+  <header class="page-head">
+    <div>
+      <h1>Schedule</h1>
+      <p>{{ totalJobs() }} job{{ totalJobs() === 1 ? '' : 's' }} this week</p>
+    </div>
+  </header>
+
+  <div class="week-nav card">
+    <button type="button" class="week-nav-btn" (click)="prevWeek()" aria-label="Previous week">
+      <app-icon name="arrow-left" [size]="18" />
+    </button>
+    <div class="week-nav-center">
+      <strong>{{ weekLabel() }}</strong>
+      @if (!isCurrentWeek()) {
+        <button type="button" class="week-nav-today" (click)="goToThisWeek()">This week</button>
+      }
+    </div>
+    <button type="button" class="week-nav-btn" (click)="nextWeek()" aria-label="Next week">
+      <app-icon name="chevron-right" [size]="18" />
+    </button>
+  </div>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (totalJobs() === 0) {
+    <app-empty-state
+      iconName="calendar"
+      title="No jobs this week"
+      message="Try another week or check back when new jobs are assigned."
+    />
+  } @else {
+    <div class="schedule-week">
+      @for (day of scheduleDays(); track day.date) {
+        @if (day.jobs.length > 0) {
+          <section class="schedule-day">
+            <header class="day-header" [class.is-today]="day.isToday">
+              <span class="day-name">{{ day.date | date: 'EEEE' }}</span>
+              <span class="day-date">{{ day.date | date: 'd MMM' }}</span>
+              @if (day.isToday) {
+                <span class="today-badge">Today</span>
+              }
+            </header>
+
+            <div class="schedule-list">
+              @for (job of day.jobs; track job.id) {
+                <a [routerLink]="['/staff/jobs', job.id]" class="schedule-card card">
+                  <div class="schedule-time">
+                    <strong>{{ job.scheduledTime }}</strong>
+                  </div>
+                  <div class="schedule-info">
+                    <span class="customer">{{ job.customerName }}</span>
+                    <span class="address">{{ job.address }}, {{ job.city }}</span>
+                  </div>
+                  <app-status-chip [status]="job.operationalStatus" />
+                </a>
+              }
+            </div>
+          </section>
+        }
+      }
+    </div>
+  }
+</div>

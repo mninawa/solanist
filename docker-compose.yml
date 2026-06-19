@@ -1,0 +1,47 @@
+services:
+  bff-external:
+    build:
+      context: ./backend/api
+      dockerfile: src/Solanist.Bff.External/Dockerfile
+    image: solanist/bff-external:latest
+    ports:
+      - "${BFF_EXTERNAL_PORT:-8081}:8080"
+    environment:
+      Mongo__ConnectionString: ${MONGODB_CONNECTION_STRING:-}
+      Mongo__DatabaseName: ${MONGODB_DATABASE_NAME:-solanist}
+      Mongo__DemoCustomerId: cust-001
+      Webhooks__BarkSecret: ${BARK_WEBHOOK_SECRET:-demo-bark-secret}
+      S3__BucketName: ${S3_BUCKET_NAME:-solanist}
+      S3__Region: ${S3_REGION:-eu-west-1}
+      S3__AccessKeyId: ${AWS_ACCESS_KEY_ID:-}
+      S3__SecretAccessKey: ${AWS_SECRET_ACCESS_KEY:-}
+      S3__PublicBaseUrl: ${S3_PUBLIC_BASE_URL:-}
+      S3__PublicRead: ${S3_PUBLIC_READ:-true}
+      Paystack__SecretKey: ${PAYSTACK_SECRET_KEY:-}
+      Paystack__PublicKey: ${PAYSTACK_PUBLIC_KEY:-}
+      Paystack__CallbackUrl: ${PAYSTACK_CALLBACK_URL:-}
+      Paystack__Plans__Quarterly Solar Care: ${PAYSTACK_PLAN_QUARTERLY:-}
+      Auth__AppBaseUrl: ${AUTH_APP_BASE_URL:-http://localhost:8080}
+      Auth__ExposeResetLinks: ${AUTH_EXPOSE_RESET_LINKS:-true}
+      Auth__GoogleClientId: ${AUTH_GOOGLE_CLIENT_ID:-}
+      Auth__AllowMockGoogleLogin: ${AUTH_ALLOW_MOCK_GOOGLE:-true}
+      Auth__DisablePasswordLogin: ${AUTH_DISABLE_PASSWORD_LOGIN:-true}
+      Auth__AllowSelfSignup: ${AUTH_ALLOW_SELF_SIGNUP:-false}
+      Email__PostmarkServerToken: ${POSTMARK_SERVER_TOKEN:-}
+      Email__FromAddress: ${Email__FromAddress:-}
+      Email__FromName: ${Email__FromName:-Solanist Solar Care}
+      WhatsApp__ApiKey: ${WHATSAPP_API_KEY:-}
+    restart: unless-stopped
+
+  external-client:
+    build:
+      context: ./external-client
+      dockerfile: Dockerfile
+    image: solanist/external-client:latest
+    ports:
+      - "${EXTERNAL_CLIENT_PORT:-8080}:80"
+    environment:
+      BFF_UPSTREAM: http://bff-external:8080
+    depends_on:
+      - bff-external
+    restart: unless-stopped

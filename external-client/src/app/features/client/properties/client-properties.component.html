@@ -1,0 +1,384 @@
+<div class="page-container">
+  <header class="page-header">
+    <h1 class="page-title">Properties & Subscriptions</h1>
+    <p class="page-subtitle">Manage your solar sites, plans, and next cleans from one dashboard.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <!-- Summary stats -->
+    <div class="summary-grid">
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-home">
+          <app-icon name="home" [size]="20" />
+        </div>
+        <div class="stat-label">Total Properties</div>
+        <div class="stat-value">{{ properties().length }}</div>
+        <p class="stat-meta stat-meta-success">{{ activeCount() }} active</p>
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-shield">
+          <app-icon name="shield" [size]="20" />
+        </div>
+        <div class="stat-label">Active Subscriptions</div>
+        <div class="stat-value">{{ subscriptionCount() }}</div>
+        <p class="stat-meta stat-meta-success">{{ subscriptionPercent() }}% of properties</p>
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-calendar">
+          <app-icon name="calendar" [size]="20" />
+        </div>
+        <div class="stat-label">Next Clean Due</div>
+        @if (nextClean(); as prop) {
+          <div class="stat-value">{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</div>
+          <p class="stat-meta">{{ prop.address }}</p>
+        } @else {
+          <div class="stat-value">—</div>
+          <p class="stat-meta">No cleans scheduled</p>
+        }
+      </div>
+
+      <div class="stat-card stat-card-icon">
+        <div class="stat-icon stat-icon-wallet">
+          <app-icon name="wallet" [size]="20" />
+        </div>
+        <div class="stat-label">Monthly Billing</div>
+        <div class="stat-value">{{ monthlyBillingTotal() | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</div>
+        <p class="stat-meta">Combined total</p>
+      </div>
+    </div>
+
+    @if (showForm()) {
+      <div class="card add-form-card">
+        <div class="form-header">
+          <h2>Add a property</h2>
+          <button type="button" class="icon-btn" aria-label="Close" (click)="closeForm()">
+            <app-icon name="close" [size]="20" />
+          </button>
+        </div>
+        <p class="form-desc">Register another solar installation for cleaning and reporting.</p>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Property name / address</label>
+            <input class="form-input" [(ngModel)]="form.address" placeholder="e.g. Hurlingham View" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input class="form-input" [(ngModel)]="form.city" placeholder="e.g. Sandton" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Postcode</label>
+            <input class="form-input" [(ngModel)]="form.postcode" placeholder="e.g. 2196" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Number of panels</label>
+            <div class="number-input-wrap">
+              <input
+                type="number"
+                class="form-input"
+                [(ngModel)]="form.panelCount"
+                [min]="minPanels"
+                [max]="maxPanels"
+                step="1"
+                inputmode="numeric"
+              />
+              <span class="input-suffix">panels</span>
+            </div>
+            <span class="form-hint">{{ minPanels }}–{{ maxPanels | number }} panels per property</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Roof type</label>
+            <select class="form-select" [(ngModel)]="form.roofType">
+              @for (type of roofTypes; track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Access notes</label>
+            <input class="form-input" [(ngModel)]="form.accessNotes" placeholder="Gate code, side entrance, etc." />
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Property photo <span class="form-label-optional">(optional)</span></label>
+            <div class="photo-field">
+              @if (formImage()) {
+                <div class="photo-preview">
+                  <img [src]="formImage()" alt="Property photo preview" />
+                  <button type="button" class="photo-remove" aria-label="Remove photo" (click)="clearFormPhoto()">
+                    <app-icon name="close" [size]="16" />
+                  </button>
+                </div>
+              } @else {
+                <label class="photo-dropzone">
+                  <app-icon name="camera" [size]="22" />
+                  <span class="photo-dropzone-title">Upload a photo</span>
+                  <span class="photo-dropzone-hint">JPG or PNG, up to 6 MB. We'll use a house photo if you skip this.</span>
+                  <input type="file" accept="image/*" hidden (change)="onFormPhotoSelected($event)" />
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (formError()) {
+          <p class="form-error">{{ formError() }}</p>
+        }
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+          <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="saveProperty()">
+            {{ saving() ? 'Saving...' : 'Save property' }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="portfolio-layout">
+      <!-- Your Properties -->
+      <section class="properties-main">
+        <div class="section-header">
+          <h2 class="section-heading">Your Properties</h2>
+          <button type="button" class="btn btn-primary add-btn" (click)="openForm()">
+            <app-icon name="plus" [size]="18" />
+            Add property
+          </button>
+        </div>
+        @if (uploadError()) {
+          <p class="upload-error">{{ uploadError() }}</p>
+        }
+        <div class="properties-grid">
+          @for (prop of properties(); track prop.id) {
+            <div class="property-card card">
+              <div class="property-image-wrap">
+                <img
+                  [src]="displayImage(prop)"
+                  [alt]="prop.address"
+                  class="property-img"
+                  (error)="onImageError(prop.id)"
+                />
+                <label class="photo-upload-btn" [class.is-busy]="uploadingId() === prop.id" [title]="prop.imageUrl ? 'Change photo' : 'Add a photo'">
+                  @if (uploadingId() === prop.id) {
+                    <span class="photo-spinner" aria-hidden="true"></span>
+                  } @else {
+                    <app-icon name="camera" [size]="15" />
+                  }
+                  <span>{{ prop.imageUrl ? 'Change photo' : 'Add photo' }}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    [disabled]="uploadingId() === prop.id"
+                    (change)="onPhotoSelected($event, prop.id)"
+                  />
+                </label>
+                <div class="property-image-badges">
+                  @if (prop.isPrimary) {
+                    <span class="badge badge-primary-star">
+                      <app-icon name="star" [size]="12" />
+                      Primary Property
+                    </span>
+                  } @else {
+                    <span></span>
+                  }
+                  @if (prop.subscriptionStatus === 'active') {
+                    <span class="badge badge-success">Active</span>
+                  } @else {
+                    <span class="badge badge-warning">Setup required</span>
+                  }
+                </div>
+              </div>
+              <div class="property-body">
+                <div class="property-body-header">
+                  <div>
+                    <h3>{{ prop.address }}</h3>
+                    <p class="property-location">{{ prop.city }}, {{ prop.postcode }}</p>
+                  </div>
+                  @if (canDeleteProperty()) {
+                    <button
+                      type="button"
+                      class="icon-btn delete-btn"
+                      aria-label="Delete property"
+                      (click)="requestDelete(prop.id)"
+                    >
+                      <app-icon name="trash" [size]="16" />
+                    </button>
+                  }
+                </div>
+                @if (prop.planName) {
+                  <span class="plan-badge" [class]="planBadgeClass(prop.planVariant)">
+                    {{ prop.planName }}
+                  </span>
+                } @else {
+                  <span class="plan-badge badge-plan-neutral">No plan assigned</span>
+                }
+
+                <div class="property-stats">
+                  <div class="stat-item">
+                    <app-icon name="sun" [size]="16" />
+                    <div>
+                      <span class="stat-item-label">Panels</span>
+                      <strong>{{ formatPanelCount(prop.panelCount) }}</strong>
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <app-icon name="dashboard" [size]="16" />
+                    <div>
+                      <span class="stat-item-label">System size</span>
+                      <strong>{{ prop.systemSizeKw }} kW</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="next-clean-row">
+                  <app-icon name="calendar" [size]="16" />
+                  @if (prop.nextCleanDate) {
+                    <span>Next clean <strong>{{ prop.nextCleanDate | date: 'd MMM yyyy' }}</strong></span>
+                  } @else {
+                    <span>Next clean <strong>Not scheduled</strong></span>
+                  }
+                </div>
+
+                <div class="property-actions" [class.property-actions-primary]="prop.isPrimary">
+                  @if (!prop.isPrimary) {
+                    <button type="button" class="btn btn-outline btn-sm" (click)="setPrimary(prop.id)">
+                      Set primary
+                    </button>
+                  }
+                  @if (prop.subscriptionStatus === 'active') {
+                    <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">Manage plan</a>
+                  } @else {
+                    <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-primary btn-sm">Assign plan</a>
+                  }
+                </div>
+
+                @if (confirmingDeleteId() === prop.id) {
+                  <div class="delete-confirm">
+                    <p>Remove <strong>{{ prop.address }}</strong> from your portfolio? This cannot be undone.</p>
+                    @if (deleteError()) {
+                      <p class="form-error">{{ deleteError() }}</p>
+                    }
+                    <div class="delete-confirm-actions">
+                      <button type="button" class="btn btn-secondary btn-sm" (click)="cancelDelete()">Cancel</button>
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        [disabled]="deleting()"
+                        (click)="confirmDelete(prop.id)"
+                      >
+                        {{ deleting() ? 'Deleting...' : 'Delete property' }}
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <aside class="properties-sidebar">
+        <!-- Consolidated Billing -->
+        <div class="sidebar-card card">
+          <h3>Consolidated Billing</h3>
+          <div class="billing-total">
+            {{ monthlyBillingTotal() | currency: 'ZAR':'symbol-narrow':'1.0-0' }}
+            <span>/ month combined</span>
+          </div>
+          <p class="sidebar-meta">Next invoice <strong>30 Jun 2026</strong></p>
+          <ul class="check-list">
+            <li><app-icon name="check" [size]="14" /> One invoice for all properties</li>
+            <li><app-icon name="check" [size]="14" /> Per-property line items</li>
+            <li><app-icon name="check" [size]="14" /> Easy to track and download</li>
+          </ul>
+          <a routerLink="/client/payments" class="btn btn-outline btn-block">View billing & invoices</a>
+        </div>
+      </aside>
+
+      <!-- Subscription Management (spans full width below) -->
+      <section class="subscription-section">
+          <h2 class="section-heading">Subscription Management</h2>
+          <div class="card subscription-table-card">
+            <div class="table-wrap">
+              <table class="subscription-table">
+                <thead>
+                  <tr>
+                    <th>Property</th>
+                    <th>Plan</th>
+                    <th>Frequency</th>
+                    <th>Next Clean</th>
+                    <th>Billing</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (prop of properties(); track prop.id) {
+                    <tr>
+                      <td data-label="Property">
+                        <div class="table-property">
+                          <img [src]="displayImage(prop)" alt="" class="table-thumb" (error)="onImageError(prop.id)" />
+                          <div>
+                            <strong>{{ prop.address }}</strong>
+                            <span>{{ prop.city }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Plan">{{ prop.planName ?? '—' }}</td>
+                      <td data-label="Frequency">{{ prop.planFrequency ?? '—' }}</td>
+                      <td data-label="Next Clean">
+                        @if (prop.nextCleanDate) {
+                          {{ prop.nextCleanDate | date: 'd MMM yyyy' }}
+                        } @else {
+                          —
+                        }
+                      </td>
+                      <td data-label="Billing">
+                        @if (prop.monthlyBilling) {
+                          {{ prop.monthlyBilling | currency: 'ZAR':'symbol-narrow':'1.0-0' }}/mo
+                        } @else {
+                          —
+                        }
+                      </td>
+                      <td data-label="Status">
+                        @if (prop.subscriptionStatus === 'active') {
+                          <span class="badge badge-success">Active</span>
+                        } @else {
+                          <span class="badge badge-warning">Setup required</span>
+                        }
+                      </td>
+                      <td data-label="Actions">
+                        <div class="table-actions">
+                          <a [routerLink]="['/client/properties', prop.id, 'plan']" class="btn btn-outline btn-sm table-action">
+                            Change plan
+                            <app-icon name="chevron-down" [size]="14" />
+                          </a>
+                          @if (canDeleteProperty()) {
+                            <button
+                              type="button"
+                              class="icon-btn delete-btn"
+                              aria-label="Delete property"
+                              (click)="requestDelete(prop.id)"
+                            >
+                              <app-icon name="trash" [size]="16" />
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <a routerLink="/client/subscription" class="view-all-link">
+              View all subscriptions
+              <app-icon name="chevron-right" [size]="16" />
+            </a>
+          </div>
+        </section>
+    </div>
+  }
+</div>

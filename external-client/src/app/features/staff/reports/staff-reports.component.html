@@ -1,0 +1,32 @@
+<div class="page-container">
+  <header class="page-head">
+    <h1>Reports</h1>
+    <p>Completed jobs and generated customer reports.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (!reports().length) {
+    <div class="empty card">
+      <app-icon name="report" [size]="32" />
+      <p>No completed reports yet. Finish a job to generate a customer report.</p>
+    </div>
+  } @else {
+    <div class="reports-list">
+      @for (job of reports(); track job.id) {
+        <a [routerLink]="['/staff/jobs', job.id]" class="report-card card">
+          <div class="report-icon">
+            <app-icon name="check-circle" [size]="20" />
+          </div>
+          <div>
+            <strong>{{ job.customerName }}</strong>
+            <span>{{ job.address }}, {{ job.city }}</span>
+            <span class="report-date">{{ job.scheduledDate | date: 'd MMM yyyy' }}</span>
+            <span class="report-id">Report: report-job-{{ job.id }}</span>
+          </div>
+          <app-icon name="chevron-right" [size]="18" />
+        </a>
+      }
+    </div>
+  }
+</div>

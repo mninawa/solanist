@@ -1,0 +1,370 @@
+@if (open()) {
+  <div class="book-clean-backdrop" (click)="close()">
+    <aside
+      class="book-clean-drawer"
+      [class.book-clean-drawer--success]="completed()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="book-clean-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="drawer-header" [class.drawer-header-minimal]="completed()">
+        @if (completed()) {
+          <button type="button" class="icon-btn drawer-close" aria-label="Close" (click)="close()">
+            <app-icon name="close" [size]="20" />
+          </button>
+        } @else {
+          <div class="drawer-header-top">
+            <button type="button" class="back-link" (click)="back()">
+              <app-icon name="arrow-left" [size]="16" />
+              Back
+            </button>
+            <h2 id="book-clean-title">Book a Clean</h2>
+            <button type="button" class="icon-btn drawer-close" aria-label="Close" (click)="close()">
+              <app-icon name="close" [size]="20" />
+            </button>
+          </div>
+
+          @if (!loading()) {
+            <div class="drawer-steps">
+              @for (label of stepLabels; track label; let i = $index) {
+                <div
+                  class="drawer-step"
+                  [class.active]="step() === i + 1"
+                  [class.done]="step() > i + 1"
+                >
+                  <span class="drawer-step-num">{{ i + 1 }}</span>
+                  <span class="drawer-step-label">{{ label }}</span>
+                </div>
+                @if (i < stepLabels.length - 1) {
+                  <div class="drawer-step-line" [class.done]="step() > i + 1"></div>
+                }
+              }
+            </div>
+          }
+        }
+      </header>
+
+      <div class="drawer-body" #drawerBody>
+        @if (loading()) {
+          <app-loading-state />
+        } @else if (completed()) {
+          <div class="success-content">
+            <div class="success-hero">
+              <div class="success-icon-ring">
+                <app-icon name="check-circle" [size]="40" />
+              </div>
+              <h3>Booking request received</h3>
+              <p class="success-subtitle">
+                We'll confirm your appointment shortly and send you a WhatsApp reminder.
+              </p>
+            </div>
+
+            @if (createdBooking(); as booking) {
+              <div class="success-details">
+                <div class="detail-item">
+                  <span class="detail-label">Property</span>
+                  <span class="detail-value">{{ selectedProperty()?.address }}, {{ selectedProperty()?.city }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Date</span>
+                  <span class="detail-value">{{ booking.date | date: 'd MMM yyyy' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Time</span>
+                  <span class="detail-value">{{ booking.timeSlot }}</span>
+                </div>
+                <div class="detail-item detail-item-status">
+                  <span class="detail-label">Status</span>
+                  <span class="status-pill">
+                    <span class="status-dot"></span>
+                    Awaiting confirmation
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          @if (step() === 1) {
+            <h3 class="step-title">1. Choose Property</h3>
+            <p class="step-desc">Select the property you'd like to book a clean for.</p>
+
+            <div class="property-options">
+              @for (prop of properties(); track prop.id) {
+                <label class="property-option card" [class.selected]="selectedPropertyId() === prop.id">
+                  <input
+                    type="radio"
+                    name="property"
+                    [value]="prop.id"
+                    [checked]="selectedPropertyId() === prop.id"
+                    (change)="selectProperty(prop.id)"
+                  />
+                  <img [src]="prop.imageUrl" [alt]="prop.address" class="option-thumb" />
+                  <div class="option-info">
+                    <strong>{{ prop.address }}</strong>
+                    <span>{{ prop.city }}</span>
+                    <span class="option-meta">
+                      {{ formatPanelCount(prop.panelCount) }} panels · {{ prop.systemSizeKw }} kW
+                    </span>
+                    @if (prop.planName) {
+                      <span class="badge plan-pill" [class]="planBadgeClass(prop.planVariant)">{{ prop.planName }}</span>
+                    }
+                    @if (prop.subscriptionStatus === 'active') {
+                      <span class="badge badge-success">Active</span>
+                    } @else {
+                      <span class="badge badge-warning">Setup required</span>
+                    }
+                  </div>
+                </label>
+              }
+            </div>
+
+            <div class="banner-info add-property-banner">
+              <span>Don't see a property? Add a new property to book a clean.</span>
+              <a routerLink="/client/properties" class="btn btn-outline btn-sm" (click)="close()">+ Add property</a>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-lg btn-block" (click)="continueFromProperty()">
+              Continue
+            </button>
+          }
+
+          @if (step() === 2 && selectedProperty(); as prop) {
+            <h3 class="step-title">2. Choose Cleaning Type</h3>
+
+            <div class="selected-property card">
+              <img [src]="prop.imageUrl" alt="" class="option-thumb" />
+              <div>
+                <strong>{{ prop.address }}</strong>
+                <span>{{ prop.city }}, {{ prop.postcode }}</span>
+              </div>
+            </div>
+
+            @if (prop.subscriptionStatus === 'active' && prop.planName) {
+              <div class="plan-info-banner">
+                <app-icon name="check-circle" [size]="18" />
+                <div>
+                  <strong>You're on {{ prop.planName }}</strong>
+                  <span>You have 3 cleans remaining this year. Next scheduled clean: {{ prop.nextCleanDate | date: 'd MMM yyyy' }}.</span>
+                </div>
+              </div>
+
+              <div class="choice-list">
+                <label class="choice-card card" [class.selected]="cleaningType() === 'subscription'">
+                  <input
+                    type="radio"
+                    name="cleanType"
+                    value="subscription"
+                    [checked]="cleaningType() === 'subscription'"
+                    (change)="cleaningType.set('subscription')"
+                  />
+                  <div>
+                    <strong>Use subscription clean</strong>
+                    <span class="recommended">Recommended</span>
+                    <p>Uses one of your included cleans — no extra charge.</p>
+                  </div>
+                </label>
+
+                <label class="choice-card card" [class.selected]="cleaningType() === 'extra'">
+                  <input
+                    type="radio"
+                    name="cleanType"
+                    value="extra"
+                    [checked]="cleaningType() === 'extra'"
+                    (change)="cleaningType.set('extra')"
+                  />
+                  <div>
+                    <strong>Request extra clean</strong>
+                    <p>Book an additional clean outside your plan for {{ extraCleanPrice() | currency: 'ZAR':'symbol-narrow':'1.0-0' }} per visit.</p>
+                  </div>
+                </label>
+              </div>
+            } @else {
+              <div class="plan-info-banner plan-info-warning">
+                <app-icon name="support" [size]="18" />
+                <div>
+                  <strong>No active plan on this property</strong>
+                  <span>Assign a plan first, or book a once-off extra clean.</span>
+                </div>
+              </div>
+              <label class="choice-card card selected">
+                <input type="radio" name="cleanType" checked />
+                <div>
+                  <strong>Request extra clean</strong>
+                  <p>{{ extraCleanPrice() | currency: 'ZAR':'symbol-narrow':'1.0-0' }} per visit — payment on confirmation.</p>
+                </div>
+              </label>
+            }
+
+            <a routerLink="/client/subscription" class="view-plans-link" (click)="close()">View plans →</a>
+
+            <button type="button" class="btn btn-primary btn-lg btn-block" (click)="continueFromService()">
+              Continue
+            </button>
+          }
+
+          @if (step() === 3 && selectedProperty(); as prop) {
+            <h3 class="step-title">3. Select Date &amp; Time</h3>
+
+            <div class="selected-property card">
+              <img [src]="prop.imageUrl" alt="" class="option-thumb" />
+              <div>
+                <strong>{{ prop.address }}</strong>
+                <span>{{ prop.city }}</span>
+              </div>
+            </div>
+
+            <div class="date-time-grid">
+              <div class="card calendar-card">
+                <h4>June 2026</h4>
+                <div class="cal-weekdays">
+                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+                </div>
+                <div class="cal-grid">
+                  @for (cell of calendarDays(); track $index) {
+                    @if (cell.day) {
+                      <button
+                        type="button"
+                        class="cal-day"
+                        [class.cal-available]="cell.available"
+                        [class.cal-selected]="selectedDate() === cell.dateKey"
+                        [disabled]="!cell.available"
+                        (click)="selectCalendarDay(cell)"
+                      >
+                        {{ cell.day }}
+                      </button>
+                    } @else {
+                      <span class="cal-day cal-empty"></span>
+                    }
+                  }
+                </div>
+              </div>
+
+              <div class="time-slots">
+                <h4>Preferred time window</h4>
+                @for (window of timeWindows; track window.id) {
+                  <label class="time-option" [class.selected]="selectedTimeWindow() === window.id">
+                    <input
+                      type="radio"
+                      name="timeWindow"
+                      [value]="window.id"
+                      [checked]="selectedTimeWindow() === window.id"
+                      (change)="selectedTimeWindow.set(window.id)"
+                    />
+                    <span>{{ window.label }}</span>
+                    <span class="time-range">{{ window.time }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Special instructions (optional)</label>
+              <textarea
+                class="form-input"
+                rows="3"
+                placeholder="Gate code, pets, parking instructions..."
+                [(ngModel)]="specialInstructions"
+              ></textarea>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary btn-lg btn-block"
+              [disabled]="!selectedDate()"
+              (click)="continueFromDate()"
+            >
+              Continue
+            </button>
+          }
+
+          @if (step() === 4 && selectedProperty(); as prop) {
+            <h3 class="step-title">4. Confirm Booking</h3>
+
+            <div class="confirm-card card">
+              <dl class="confirm-list">
+                <dt>Property</dt>
+                <dd>{{ prop.address }}, {{ prop.city }}</dd>
+                <dt>Service</dt>
+                <dd>Solar Panel Cleaning</dd>
+                <dt>Booking type</dt>
+                <dd>
+                  @if (cleaningType() === 'subscription') {
+                    Subscription clean
+                    <span class="badge badge-info">Using 1 of your included cleans</span>
+                  } @else {
+                    Extra clean — {{ extraCleanPrice() | currency: 'ZAR':'symbol-narrow':'1.0-0' }}
+                  }
+                </dd>
+                <dt>Preferred date</dt>
+                <dd>{{ selectedDate() | date: 'd MMM yyyy' }}</dd>
+                <dt>Preferred time</dt>
+                <dd>{{ selectedTimeLabel() }}</dd>
+              </dl>
+
+              <div class="includes-section">
+                <h4>What's included</h4>
+                <ul>
+                  @for (item of bookingIncludes; track item) {
+                    <li><app-icon name="check" [size]="14" /> {{ item }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+
+            @if (submitError()) {
+              <p class="form-error">{{ submitError() }}</p>
+            }
+
+            <button
+              type="button"
+              class="btn btn-primary btn-lg btn-block"
+              [disabled]="submitting()"
+              (click)="confirmBooking()"
+            >
+              {{ submitting() ? 'Submitting...' : 'Confirm booking request' }}
+            </button>
+          }
+        }
+      </div>
+
+      @if (completed()) {
+        <footer class="drawer-footer">
+          <button type="button" class="btn btn-primary btn-block" (click)="close()">View my bookings</button>
+          <a
+            [href]="'https://wa.me/' + config.supportWhatsApp"
+            target="_blank"
+            class="btn btn-secondary btn-block"
+          >
+            <app-icon name="chat" [size]="18" />
+            Chat on WhatsApp
+          </a>
+        </footer>
+      }
+
+      @if (showExistingModal() && existingBooking(); as existing) {
+        <div class="drawer-modal-backdrop" (click)="closeExistingModal()">
+          <div class="modal-card card" (click)="$event.stopPropagation()">
+            <div class="modal-icon">
+              <app-icon name="support" [size]="24" />
+            </div>
+            <h3>Already have an upcoming booking</h3>
+            <p>This property already has a clean scheduled:</p>
+            <dl class="modal-details">
+              <dt>Service</dt><dd>{{ existing.serviceType }}</dd>
+              <dt>Property</dt><dd>{{ existing.propertyAddress }}</dd>
+              <dt>Date</dt><dd>{{ existing.date | date: 'd MMM yyyy' }}</dd>
+              <dt>Time</dt><dd>{{ existing.timeSlot }}</dd>
+            </dl>
+            <p class="modal-question">Would you like to reschedule instead?</p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-primary btn-block" (click)="rescheduleExisting()">Reschedule existing booking</button>
+              <button type="button" class="btn btn-outline btn-block" (click)="proceedDespiteExisting()">Book another date</button>
+              <button type="button" class="btn btn-ghost btn-block" (click)="closeExistingModal()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
+    </aside>
+  </div>
+}

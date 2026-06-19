@@ -1,0 +1,178 @@
+<div class="page-container">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (booking(); as b) {
+    <a routerLink="/client/bookings" class="back-link">
+      <app-icon name="arrow-left" [size]="16" />
+      Back to bookings
+    </a>
+
+    <header class="detail-header">
+      <h1 class="page-title">Booking details</h1>
+      <p class="page-subtitle">Here's everything you need to know about your upcoming service.</p>
+    </header>
+
+    <div class="hero-card card">
+      <div class="hero-icon">
+        <app-icon name="sun" [size]="28" />
+      </div>
+      <div class="hero-info">
+        <h2>{{ b.serviceType }}</h2>
+        <p class="hero-location">
+          <app-icon name="map-pin" [size]="14" />
+          {{ propertyName(b) }}, {{ propertyCity(b) }}
+        </p>
+        @if (b.planName) {
+          <span class="plan-badge">{{ b.planName }}</span>
+        }
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-label">Status</span>
+          @if (b.confirmationStatus === 'confirmed') {
+            <span class="status-pill status-confirmed"><span class="status-dot"></span>Confirmed</span>
+          } @else {
+            <span class="status-pill status-scheduled"><span class="status-dot"></span>Scheduled</span>
+          }
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-label">Date</span>
+          <strong>{{ b.date | date: 'd MMM yyyy' }}</strong>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-label">Time</span>
+          <strong>{{ b.timeSlot }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-card card">
+        <h3>Booking overview</h3>
+        <dl class="info-list">
+          <dt><app-icon name="link" [size]="14" /> Booking ID</dt>
+          <dd>{{ b.bookingRef ?? b.id }}</dd>
+          <dt><app-icon name="sun" [size]="14" /> Service</dt>
+          <dd>{{ b.serviceType }}</dd>
+          <dt><app-icon name="subscription" [size]="14" /> Plan</dt>
+          <dd>{{ b.planName ?? '—' }}</dd>
+          <dt><app-icon name="calendar" [size]="14" /> Booked on</dt>
+          <dd>{{ b.bookedOn ? (b.bookedOn | date: 'd MMM yyyy') : '—' }}</dd>
+          <dt><app-icon name="schedule" [size]="14" /> Service duration</dt>
+          <dd>{{ b.serviceDuration ?? '~4 hours' }}</dd>
+        </dl>
+      </div>
+
+      <div class="detail-card card">
+        <h3>Property details</h3>
+        <dl class="info-list">
+          <dt><app-icon name="home" [size]="14" /> Property name</dt>
+          <dd>{{ propertyName(b) }}</dd>
+          <dt><app-icon name="sun" [size]="14" /> System size</dt>
+          <dd>{{ b.systemSizeKw ? b.systemSizeKw + ' kW' : '—' }}</dd>
+          <dt><app-icon name="report" [size]="14" /> Number of panels</dt>
+          <dd>{{ b.panelCount ?? '—' }}</dd>
+          <dt><app-icon name="home" [size]="14" /> Roof type</dt>
+          <dd>{{ b.roofType ?? '—' }}</dd>
+          <dt><app-icon name="map-pin" [size]="14" /> Access</dt>
+          <dd>{{ b.accessNotes ?? '—' }}</dd>
+        </dl>
+        @if (b.propertyId) {
+          <a [routerLink]="['/client/properties']" class="card-link">View property →</a>
+        }
+      </div>
+
+      <div class="detail-card card">
+        <h3>Assigned technician</h3>
+        <div class="technician-placeholder">
+          <app-icon name="users" [size]="32" />
+        </div>
+        @if (b.staffName) {
+          <p class="technician-name">{{ b.staffName }}</p>
+        } @else {
+          <p class="technician-note">Your technician will be assigned 24 hours before your visit.</p>
+        }
+        <p class="technician-footer">
+          <app-icon name="check-circle" [size]="14" />
+          All technicians are trained and insured.
+        </p>
+      </div>
+
+      <div class="detail-card card">
+        <h3>What's included</h3>
+        <ul class="includes-list">
+          @for (item of includes; track item) {
+            <li><app-icon name="check" [size]="14" /> {{ item }}</li>
+          }
+        </ul>
+      </div>
+
+      <div class="detail-card card">
+        <h3>Special instructions / notes</h3>
+        <p class="notes-text">{{ b.specialInstructions ?? 'No special instructions provided.' }}</p>
+      </div>
+
+      <div class="detail-card card billing-card">
+        <div class="billing-icon">
+          <app-icon name="check-circle" [size]="24" />
+        </div>
+        <div>
+          @if (b.billingNote === 'subscription') {
+            <strong>Included in your subscription</strong>
+            <p>This service is covered under your {{ b.planName ?? 'plan' }} — no additional charge.</p>
+          } @else {
+            <strong>Once-off service</strong>
+            <p>Payment will be collected on confirmation of your booking.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="help-bar card">
+      <div class="help-text">
+        <app-icon name="support" [size]="20" />
+        <span>Need help? Our team is available on WhatsApp or phone.</span>
+      </div>
+      <div class="help-actions">
+        <a [href]="'https://wa.me/' + config.supportWhatsApp" target="_blank" class="btn btn-outline btn-sm">
+          <app-icon name="chat" [size]="14" /> WhatsApp support
+        </a>
+        <a [href]="'tel:' + config.supportPhone" class="btn btn-outline btn-sm">
+          <app-icon name="phone" [size]="14" /> Call us
+        </a>
+      </div>
+    </div>
+
+    @if (b.status === 'upcoming') {
+      <div class="action-bar">
+        <button type="button" class="btn btn-primary" (click)="openReschedule()">
+          <app-icon name="calendar" [size]="16" />
+          Reschedule
+        </button>
+        <a [href]="'https://wa.me/' + config.supportWhatsApp" target="_blank" class="btn btn-outline">
+          <app-icon name="support" [size]="16" />
+          Contact support
+        </a>
+        <button type="button" class="btn btn-outline">
+          <app-icon name="calendar" [size]="16" />
+          Add to calendar
+        </button>
+      </div>
+      <p class="action-note">
+        <app-icon name="check" [size]="14" />
+        We'll send you a confirmation once your booking has been updated.
+      </p>
+    } @else if (b.status === 'completed') {
+      <a routerLink="/client/reports/report-001" class="btn btn-primary">View cleaning report</a>
+    }
+    }
+  }
+</div>
+
+<app-client-booking-reschedule
+  [open]="rescheduleOpen()"
+  [bookingId]="booking()?.id ?? null"
+  (closed)="closeReschedule()"
+  (rescheduled)="onRescheduled($event)"
+/>

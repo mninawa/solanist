@@ -1,0 +1,149 @@
+.breadcrumb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.invite-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.feature-list {
+  margin: 12px 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--admin-green);
+}
+
+.field {
+  display: block;
+  margin-bottom: 12px;
+
+  span {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--admin-text-muted);
+    margin-bottom: 6px;
+  }
+}
+
+.link-row {
+  display: flex;
+  gap: 8px;
+
+  input {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--admin-bg);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    color: var(--admin-text);
+    font-size: 0.75rem;
+  }
+}
+
+.admin-select.full {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  color: var(--admin-text);
+  font-size: 0.8125rem;
+}
+
+.tag-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.template-input {
+  width: 100%;
+  padding: 12px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  color: var(--admin-text);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.template-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid var(--admin-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.phone-frame {
+  background: #0b141a;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 200px;
+}
+
+.wa-bubble {
+  background: #1f2c34;
+  border-radius: 12px 12px 12px 4px;
+  padding: 12px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.sender {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+}
+
+.security-note {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+.muted {
+  color: var(--admin-text-muted);
+  font-size: 0.8125rem;
+}
+
+.error-text {
+  color: #f87171;
+  font-size: 0.8125rem;
+  margin-top: 8px;
+}
+
+.success-text {
+  color: var(--admin-gold);
+  font-size: 0.8125rem;
+  margin-top: 8px;
+
+  a {
+    color: inherit;
+    word-break: break-all;
+  }
+}

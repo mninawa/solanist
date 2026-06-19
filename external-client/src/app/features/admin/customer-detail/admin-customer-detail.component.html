@@ -1,0 +1,173 @@
+<div class="admin-page">
+  <a routerLink="/admin/customers" class="back-link">
+    <app-icon name="arrow-left" [size]="16" /> Back to customers
+  </a>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (notFound() || !customer()) {
+    <div class="admin-card empty-card">
+      <p>Customer not found.</p>
+      <a routerLink="/admin/customers" class="admin-btn admin-btn-sm">Back to customers</a>
+    </div>
+  } @else if (customer()) {
+    @let c = customer()!;
+    <header class="detail-header">
+      <div class="detail-identity">
+        <span class="detail-avatar">{{ initials(c.name) }}</span>
+        <div>
+          <h1>{{ c.name }}</h1>
+          <span class="admin-pill" [class.pill-active]="c.status === 'active'" [class.pill-new]="c.status !== 'active'">
+            {{ c.status }}
+          </span>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <a class="admin-btn admin-btn-sm" [href]="telHref(c.phone)" title="Call">
+          <app-icon name="phone" [size]="16" /> Call
+        </a>
+        <a class="admin-btn admin-btn-sm" [href]="mailtoHref(c.email)" title="Email">
+          <app-icon name="mail" [size]="16" /> Email
+        </a>
+        <a class="admin-btn admin-btn-sm" [href]="whatsAppHref(c.phone)" target="_blank" rel="noopener noreferrer" title="WhatsApp">
+          <app-icon name="chat" [size]="16" /> WhatsApp
+        </a>
+      </div>
+    </header>
+
+    <div class="detail-grid">
+      <div class="detail-main">
+        <!-- Subscription -->
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Subscription</h2>
+          </div>
+          @if (c.subscription; as sub) {
+            <div class="sub-top">
+              <div>
+                <span class="sub-plan">{{ sub.planName }}</span>
+                <span class="admin-pill pill-active">{{ sub.status }}</span>
+              </div>
+              <span class="sub-price">{{ sub.pricePerVisit | currency: 'ZAR':'symbol-narrow':'1.0-0' }}<small>/clean</small></span>
+            </div>
+            <div class="sub-meta">
+              <div><span class="meta-label">Billing</span><span>{{ sub.billingCycle }}</span></div>
+              <div><span class="meta-label">Annual</span><span>{{ sub.annualPrice | currency: 'ZAR':'symbol-narrow':'1.0-0' }}</span></div>
+              <div><span class="meta-label">Visits left</span><span>{{ sub.visitsRemaining }}</span></div>
+              <div><span class="meta-label">Next billing</span><span>{{ sub.nextBillingDate || '—' }}</span></div>
+              <div><span class="meta-label">Payment</span><span>{{ sub.paymentMethod }}</span></div>
+            </div>
+            @if (sub.features.length) {
+              <ul class="sub-features">
+                @for (f of sub.features; track f) {
+                  <li><app-icon name="check-circle" [size]="14" /> {{ f }}</li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="muted">No active subscription — this customer is a prospect.</p>
+          }
+        </section>
+
+        <!-- Properties -->
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Properties ({{ c.properties.length }})</h2>
+          </div>
+          @if (c.properties.length) {
+            <div class="property-list">
+              @for (p of c.properties; track p.id) {
+                <div class="property-row">
+                  <div class="property-icon"><app-icon name="home" [size]="18" /></div>
+                  <div class="property-body">
+                    <div class="property-head">
+                      <strong>{{ p.address }}, {{ p.city }}</strong>
+                      @if (p.isPrimary) { <span class="admin-pill pill-primary">Primary</span> }
+                    </div>
+                    <div class="property-meta">
+                      <span>{{ p.panelCount }} panels</span>
+                      <span>{{ p.roofType }}</span>
+                      @if (p.systemSizeKw) { <span>{{ p.systemSizeKw }} kW</span> }
+                      @if (p.planName) { <span>{{ p.planName }}</span> }
+                      @if (p.nextCleanDate) { <span>Next clean: {{ p.nextCleanDate | date: 'd MMM yyyy' }}</span> }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="muted">No properties on file.</p>
+          }
+        </section>
+
+        <!-- Bookings -->
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Bookings ({{ c.bookings.length }})</h2>
+          </div>
+          @if (c.bookings.length) {
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Ref</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Plan</th>
+                    <th>Technician</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of c.bookings; track b.id) {
+                    <tr>
+                      <td><code>{{ b.bookingRef }}</code></td>
+                      <td>{{ b.date | date: 'd MMM yyyy' }}</td>
+                      <td>{{ b.timeSlot }}</td>
+                      <td>{{ b.planName ?? '—' }}</td>
+                      <td>{{ b.staffName ?? 'Unassigned' }}</td>
+                      <td><span class="admin-pill" [class]="bookingStatusClass(b.status)">{{ b.status }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="muted">No bookings yet.</p>
+          }
+        </section>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="detail-side">
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Contact</h2>
+          </div>
+          <div class="side-row"><span class="meta-label">Email</span><span class="side-value">{{ c.email }}</span></div>
+          <div class="side-row"><span class="meta-label">Phone</span><span class="side-value">{{ c.phone || '—' }}</span></div>
+          <div class="side-row"><span class="meta-label">Preferred</span><span class="side-value">{{ c.preferredContact }}</span></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Preferences</h2>
+          </div>
+          <div class="side-row">
+            <span class="meta-label">Email reminders</span>
+            <span class="admin-pill" [class.pill-active]="c.emailReminders" [class.pill-new]="!c.emailReminders">
+              {{ c.emailReminders ? 'On' : 'Off' }}
+            </span>
+          </div>
+          <div class="side-row">
+            <span class="meta-label">WhatsApp reminders</span>
+            <span class="admin-pill" [class.pill-active]="c.whatsAppReminders" [class.pill-new]="!c.whatsAppReminders">
+              {{ c.whatsAppReminders ? 'On' : 'Off' }}
+            </span>
+          </div>
+          <div class="side-row"><span class="meta-label">Billing mode</span><span class="side-value">{{ c.billingMode }}</span></div>
+        </section>
+      </aside>
+    </div>
+  }
+</div>

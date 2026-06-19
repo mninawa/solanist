@@ -1,0 +1,25 @@
+<div class="page-container">
+  <header class="page-head">
+    <h1>All jobs</h1>
+    <p>Your assigned cleaning jobs.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="jobs-list">
+      @for (job of jobs(); track job.id) {
+        <a [routerLink]="['/staff/jobs', job.id]" class="job-card card">
+          <div class="job-card-top">
+            <span class="route-badge">#{{ job.routeOrder }}</span>
+            <app-status-chip [status]="job.operationalStatus" />
+          </div>
+          <p class="job-date">{{ job.scheduledDate | date: 'd MMM yyyy' }} · {{ job.scheduledTime }}</p>
+          <h2>{{ job.customerName }}</h2>
+          <p class="job-address">{{ job.address }}, {{ job.city }}</p>
+          <p class="job-meta">{{ job.serviceType }} · {{ job.planType }}</p>
+        </a>
+      }
+    </div>
+  }
+</div>

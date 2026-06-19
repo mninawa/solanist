@@ -1,0 +1,146 @@
+<div class="admin-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (stats(); as s) {
+      <div class="admin-stat-grid sub-stats">
+        <div class="admin-stat-card accent-blue">
+          <div class="stat-top">
+            <span class="stat-label">Active Plans</span>
+            <span class="stat-icon"><app-icon name="subscription" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.activePlans }}</span>
+          <span class="stat-trend" [class]="'trend-' + trendDirection(s.activePlansTrend)">
+            {{ trendArrow(s.activePlansTrend) }} {{ trendText(s.activePlansTrend) }}
+          </span>
+        </div>
+        <div class="admin-stat-card accent-gold">
+          <div class="stat-top">
+            <span class="stat-label">Due This Week</span>
+            <span class="stat-icon"><app-icon name="calendar" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.dueThisWeek }}</span>
+          <span class="stat-trend"><a routerLink="/admin/schedule" class="link-sm">View schedule →</a></span>
+        </div>
+        <div class="admin-stat-card accent-green">
+          <div class="stat-top">
+            <span class="stat-label">Monthly Recurring Revenue</span>
+            <span class="stat-icon"><app-icon name="wallet" [size]="16" /></span>
+          </div>
+          <span class="stat-value">R{{ s.monthlyRecurringRevenue | number: '1.0-0' }}</span>
+          <span class="stat-trend" [class]="'trend-' + trendDirection(s.mrrTrend)">
+            {{ trendArrow(s.mrrTrend) }} {{ trendText(s.mrrTrend) }}
+          </span>
+        </div>
+        <div class="admin-stat-card accent-purple">
+          <div class="stat-top">
+            <span class="stat-label">Renewal Rate</span>
+            <span class="stat-icon"><app-icon name="star" [size]="16" /></span>
+          </div>
+          <span class="stat-value">{{ s.renewalRate }}%</span>
+          <span class="stat-trend" [class]="'trend-' + trendDirection(s.renewalTrend)">
+            {{ trendArrow(s.renewalTrend) }} {{ trendText(s.renewalTrend) }}
+          </span>
+        </div>
+      </div>
+    }
+
+    <div class="sub-grid">
+      <section class="admin-card table-section">
+        <div class="admin-card-header">
+          <h2>Subscription Plans</h2>
+          <div class="sub-search">
+            <app-icon name="empty" [size]="16" />
+            <input
+              type="search"
+              [value]="search()"
+              (input)="onSearch($event)"
+              placeholder="Search customer, plan, status…"
+              aria-label="Search subscriptions"
+            />
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Plan</th>
+                <th>Next Clean</th>
+                <th>Payment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of filteredRows(); track row.id) {
+                <tr>
+                  <td>
+                    <strong>{{ row.customerName }}</strong>
+                    <br /><span class="muted">{{ row.location }}</span>
+                  </td>
+                  <td>{{ row.planType }}</td>
+                  <td>
+                    {{ row.nextCleanDate }}
+                    <br /><span class="muted">{{ row.nextCleanRelative }}</span>
+                  </td>
+                  <td><span class="admin-pill" [class]="paymentClass(row.paymentStatus)">{{ row.paymentStatus }}</span></td>
+                  <td><span class="admin-pill" [class]="planStatusClass(row.planStatus)">{{ row.planStatus }}</span></td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty-row">No subscriptions match “{{ search().trim() }}”.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="table-footer muted">Showing {{ filteredRows().length }} of {{ rows().length }} subscriptions</p>
+      </section>
+
+      <aside class="side-widgets">
+        <section class="admin-card">
+          <h2>Schedule: This Week</h2>
+          @for (area of schedule(); track area.area) {
+            <div class="schedule-area">
+              <strong>{{ area.area }}</strong>
+              <div class="slot-row">
+                @for (slot of area.slots; track slot.time) {
+                  <span class="slot-chip" [class]="slot.status">{{ slot.time }} {{ slot.initials }}</span>
+                }
+              </div>
+            </div>
+          }
+          <p class="muted link"><a routerLink="/admin/schedule">View Full Schedule</a></p>
+        </section>
+
+        <section class="admin-card">
+          <h2>Plan Comparison</h2>
+          <div class="plan-cards">
+            @for (plan of plans(); track plan.id) {
+              <article class="plan-mini" [class.popular]="plan.popular">
+                @if (plan.popular) {
+                  <span class="admin-tag tag-gold">Most Popular</span>
+                }
+                <h3>{{ plan.name }}</h3>
+                <p class="price">R{{ plan.price }}<span>/{{ plan.interval }}</span></p>
+                <ul>
+                  @for (f of plan.features; track f) {
+                    <li>{{ f }}</li>
+                  }
+                </ul>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="admin-card">
+          <h2>WhatsApp Reminder Automation</h2>
+          <label class="toggle"><span>7 days before</span><input type="checkbox" checked /></label>
+          <label class="toggle"><span>1 day before</span><input type="checkbox" checked /></label>
+          <label class="toggle"><span>Day of service</span><input type="checkbox" checked /></label>
+          <p class="muted">Automation active for 138 customers</p>
+        </section>
+      </aside>
+    </div>
+  }
+</div>

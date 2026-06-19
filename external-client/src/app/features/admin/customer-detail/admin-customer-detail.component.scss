@@ -1,0 +1,209 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--admin-text-secondary, #9ca3af);
+  margin-bottom: var(--spacing-md);
+}
+.back-link:hover {
+  color: var(--admin-text-primary, #f3f4f6);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+.detail-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+.detail-avatar {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.detail-identity h1 {
+  margin: 0 0 4px;
+  font-size: 1.4rem;
+}
+.detail-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+.detail-actions .admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--spacing-lg);
+  align-items: start;
+}
+.detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  min-width: 0;
+}
+.detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.muted {
+  color: var(--admin-text-secondary, #9ca3af);
+  font-size: 0.9rem;
+}
+
+/* Subscription */
+.sub-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+.sub-plan {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-right: var(--spacing-sm);
+}
+.sub-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--admin-accent, #f5b740);
+}
+.sub-price small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary, #9ca3af);
+}
+.sub-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+  border-top: 1px solid var(--admin-border, rgba(255, 255, 255, 0.08));
+}
+.sub-meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.meta-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-secondary, #9ca3af);
+}
+.sub-features {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-md) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.sub-features li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--admin-text-secondary, #d1d5db);
+}
+
+/* Properties */
+.property-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.property-row {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--admin-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md);
+}
+.property-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-2, rgba(255, 255, 255, 0.05));
+  color: var(--admin-accent, #f5b740);
+}
+.property-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: 4px;
+}
+.property-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  font-size: 0.8rem;
+  color: var(--admin-text-secondary, #9ca3af);
+}
+
+/* Sidebar rows */
+.side-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--admin-border, rgba(255, 255, 255, 0.06));
+  font-size: 0.875rem;
+}
+.side-row:last-child {
+  border-bottom: none;
+}
+.side-value {
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Pill variants */
+.admin-pill.pill-primary {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+}
+.admin-pill.pill-upcoming {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+.admin-pill.pill-completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+.admin-pill.pill-cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

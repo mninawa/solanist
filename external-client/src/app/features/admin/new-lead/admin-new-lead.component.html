@@ -1,0 +1,111 @@
+<div class="admin-page">
+  <div class="breadcrumb-row">
+    <p class="muted">Leads Inbox / New Lead</p>
+    <a routerLink="/admin/leads" class="admin-btn admin-btn-sm">← Back to Inbox</a>
+  </div>
+
+  <header class="page-head">
+    <h1>Add New Lead</h1>
+    <p>Capture a lead manually — they appear in the inbox immediately.</p>
+  </header>
+
+  @if (error()) {
+    <p class="form-error">{{ error() }}</p>
+  }
+
+  <form class="lead-form admin-card" (ngSubmit)="submit()">
+    <section class="form-section">
+      <h2>Customer</h2>
+      <div class="form-grid">
+        <label class="field">
+          <span>Full name *</span>
+          <input type="text" [(ngModel)]="customerName" name="customerName" required />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input type="email" [(ngModel)]="customerEmail" name="customerEmail" />
+        </label>
+        <label class="field">
+          <span>Phone</span>
+          <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="082 555 1234" />
+        </label>
+        <label class="field">
+          <span>Source</span>
+          <select [(ngModel)]="source" name="source">
+            @for (opt of sourceOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Property</h2>
+      <div class="form-grid">
+        <label class="field span-2">
+          <span>Address</span>
+          <input type="text" [(ngModel)]="propertyAddress" name="propertyAddress" />
+        </label>
+        <label class="field">
+          <span>City</span>
+          <input type="text" [(ngModel)]="city" name="city" />
+        </label>
+        <label class="field">
+          <span>Postcode</span>
+          <input type="text" [(ngModel)]="postcode" name="postcode" />
+        </label>
+        <label class="field">
+          <span>Province</span>
+          <input type="text" [(ngModel)]="province" name="province" />
+        </label>
+        <label class="field">
+          <span>Panel count</span>
+          <input type="number" [(ngModel)]="panelCount" name="panelCount" min="1" max="200" />
+        </label>
+        <label class="field">
+          <span>Roof type</span>
+          <input type="text" [(ngModel)]="roofType" name="roofType" />
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Request</h2>
+      <div class="form-grid">
+        <label class="field span-2">
+          <span>Request details *</span>
+          <textarea
+            [(ngModel)]="requestSnippet"
+            name="requestSnippet"
+            rows="3"
+            placeholder="What does the customer need?"
+            required
+          ></textarea>
+        </label>
+        <label class="field span-2">
+          <span>Internal notes</span>
+          <textarea [(ngModel)]="notes" name="notes" rows="2"></textarea>
+        </label>
+        <label class="field">
+          <span>Service type</span>
+          <input type="text" [(ngModel)]="serviceType" name="serviceType" />
+        </label>
+        <label class="field">
+          <span>Urgency</span>
+          <select [(ngModel)]="urgency" name="urgency">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <a routerLink="/admin/leads" class="admin-btn admin-btn-sm">Cancel</a>
+      <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm" [disabled]="saving()">
+        {{ saving() ? 'Creating…' : 'Create Lead' }}
+      </button>
+    </div>
+  </form>
+</div>

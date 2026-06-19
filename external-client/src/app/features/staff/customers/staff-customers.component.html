@@ -1,0 +1,33 @@
+<div class="page-container staff-page">
+  <header class="page-header">
+    <h1 class="page-title">Customers</h1>
+    <p class="page-subtitle">Customers on your route today.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="customer-grid">
+      @for (customer of customers(); track customer.id) {
+        <article class="card customer-card">
+          <div class="customer-head">
+            <span class="customer-avatar">{{ customer.name.charAt(0) }}</span>
+            <div>
+              <strong>{{ customer.name }}</strong>
+              <span>{{ customer.propertyCount }} {{ customer.propertyCount === 1 ? 'property' : 'properties' }}</span>
+            </div>
+          </div>
+          <p class="customer-address">{{ customer.primaryAddress }}</p>
+          <div class="customer-actions">
+            <a [href]="'tel:' + customer.phone" class="icon-action" aria-label="Call">
+              <app-icon name="phone" [size]="16" />
+            </a>
+            <a [href]="whatsAppLink(customer.phone)" target="_blank" class="icon-action" aria-label="WhatsApp">
+              <app-icon name="chat" [size]="16" />
+            </a>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

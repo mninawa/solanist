@@ -1,0 +1,13 @@
+@media (max-width: 768px) {
+  .desktop-only-user {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-drawer,
+  .drawer-backdrop,
+  .bottom-nav {
+    display: none !important;
+  }
+}

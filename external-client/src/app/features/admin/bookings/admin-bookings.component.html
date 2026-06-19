@@ -1,0 +1,140 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Bookings</h1>
+    <p>Bookings grouped by status — assign staff to upcoming jobs.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="admin-stat-grid booking-stats">
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Upcoming</span>
+          <span class="stat-icon"><app-icon name="calendar" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ upcomingCount() }}</span>
+        <span class="stat-trend trend-neutral">Scheduled ahead</span>
+      </div>
+      <div class="admin-stat-card accent-red">
+        <div class="stat-top">
+          <span class="stat-label">Unassigned</span>
+          <span class="stat-icon"><app-icon name="users" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ unassignedCount() }}</span>
+        <span class="stat-trend negative">Need a technician</span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Completed</span>
+          <span class="stat-icon"><app-icon name="check-circle" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ completedCount() }}</span>
+        <span class="stat-trend">
+          <a routerLink="/admin/schedule" class="link-sm">Route view →</a>
+        </span>
+      </div>
+    </div>
+
+    <div class="kanban-board" cdkDropListGroup>
+      @for (column of columns; track column.status) {
+        @if (column.status !== 'cancelled' || columnCount(column.status) > 0) {
+          <section class="kanban-column" [class]="'kanban-column--' + column.accent">
+            <header class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span class="kanban-column-icon">
+                  <app-icon [name]="column.icon" [size]="16" />
+                </span>
+                <div>
+                  <h2>{{ column.label }}</h2>
+                  <p>{{ column.hint }}</p>
+                </div>
+              </div>
+              <span class="kanban-count">{{ columnCount(column.status) }}</span>
+            </header>
+
+            <div
+              class="kanban-column-body"
+              cdkDropList
+              [cdkDropListData]="columnBookings(column.status)"
+              [cdkDropListSortingDisabled]="true"
+              (cdkDropListDropped)="dropBooking($event, column.status)"
+            >
+              @for (booking of columnBookings(column.status); track booking.id) {
+                <article
+                  class="kanban-card"
+                  cdkDrag
+                  [cdkDragData]="booking"
+                  [class.kanban-card--unassigned]="isUnassigned(booking)"
+                  [class.kanban-card--updating]="updatingId() === booking.id"
+                >
+                  <div class="kanban-card-body" cdkDragHandle>
+                    <div class="kanban-card-top">
+                      <code class="kanban-ref">{{ booking.bookingRef }}</code>
+                      @if (isUnassigned(booking)) {
+                        <span class="kanban-flag">Needs staff</span>
+                      }
+                    </div>
+
+                    <div class="kanban-customer">
+                      <span class="kanban-avatar">{{ customerInitials(booking.customerName) }}</span>
+                      <strong>{{ booking.customerName }}</strong>
+                    </div>
+
+                    <div class="kanban-meta">
+                      <span class="kanban-meta-row">
+                        <app-icon name="map-pin" [size]="14" />
+                        {{ booking.propertyAddress }}
+                      </span>
+                      <span class="kanban-meta-row">
+                        <app-icon name="calendar" [size]="14" />
+                        {{ booking.date | date: 'd MMM yyyy' }} · {{ booking.timeSlot }}
+                      </span>
+                    </div>
+
+                    <div class="kanban-plan">
+                      {{ booking.planName ?? 'Solar Care' }}
+                      @if (booking.panelCount) {
+                        <span>· {{ booking.panelCount }} panels</span>
+                      }
+                    </div>
+                  </div>
+
+                  <footer class="kanban-card-footer">
+                    @if (booking.status === 'upcoming') {
+                      <label class="kanban-staff-label">
+                        <app-icon name="users" [size]="14" />
+                        <select
+                          class="staff-select"
+                          [value]="booking.staffId ?? ''"
+                          [disabled]="assigningId() === booking.id"
+                          (change)="assignStaff(booking, $any($event.target).value)"
+                          [attr.aria-label]="'Assign staff for ' + booking.bookingRef"
+                        >
+                          <option value="" disabled>Unassigned</option>
+                          @for (member of staff(); track member.id) {
+                            <option [value]="member.id">{{ member.fullName }}</option>
+                          }
+                        </select>
+                      </label>
+                    } @else {
+                      <span class="kanban-staff-name">
+                        <app-icon name="users" [size]="14" />
+                        {{ booking.staffName ?? 'Unassigned' }}
+                      </span>
+                    }
+                  </footer>
+                </article>
+              } @empty {
+                <div class="kanban-empty">
+                  <app-icon [name]="column.icon" [size]="22" />
+                  <p>No {{ column.label | lowercase }} bookings</p>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      }
+    </div>
+  }
+</div>

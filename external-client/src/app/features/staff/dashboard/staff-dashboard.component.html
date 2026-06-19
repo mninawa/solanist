@@ -1,0 +1,102 @@
+<div class="page-container staff-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (dashboard(); as d) {
+      <div class="dashboard-top">
+        <div class="dashboard-greeting">
+          <h1>Good morning, {{ d.staffName.split(' ')[0] }}!</h1>
+          <div class="weather-widget">
+            <app-icon name="sun" [size]="18" />
+            <span class="weather-temp">21°C</span>
+            <span class="weather-desc">Partly cloudy</span>
+          </div>
+        </div>
+
+        @if (d.nextJob; as next) {
+          <a [routerLink]="['/staff/jobs', next.id]" class="next-job-compact card">
+            <div>
+              <span class="next-label">Next job</span>
+              <strong>{{ jobTimeStart(next) }}</strong>
+              <span class="next-property">{{ next.address }}</span>
+            </div>
+            <span class="next-map-link">
+              View on map
+              <app-icon name="map-pin" [size]="14" />
+            </span>
+          </a>
+        }
+      </div>
+
+      <div class="dashboard-stats">
+        <div class="stat-card card">
+          <strong>{{ d.totalCount }}</strong>
+          <span>Total Jobs</span>
+        </div>
+        <div class="stat-card card">
+          <strong>{{ d.completedCount }}</strong>
+          <span>Completed</span>
+        </div>
+        <div class="stat-card card">
+          <strong>{{ d.remainingCount }}</strong>
+          <span>Remaining</span>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <h2 class="section-title">Today's Jobs</h2>
+        <button type="button" class="sort-btn" (click)="toggleSort()">
+          <app-icon name="schedule" [size]="14" />
+          Sort by start time
+        </button>
+      </div>
+
+      <div class="job-list">
+        @for (job of activeJobs(); track job.id) {
+          <article class="job-row card">
+            <a [routerLink]="['/staff/jobs', job.id]" class="job-row-main">
+              <span class="job-time">{{ job.scheduledTime }}</span>
+              <div class="job-row-body">
+                <strong>{{ job.address }}</strong>
+                <span class="job-customer">{{ job.customerName }}</span>
+                <span class="job-specs">
+                  {{ job.address }}, {{ job.city }} · {{ job.panelCount }} Panels · {{ job.roofType }}
+                </span>
+              </div>
+              <span class="staff-status-badge" [class]="statusClass(job.operationalStatus)">
+                {{ statusLabel(job.operationalStatus) }}
+              </span>
+            </a>
+            <div class="job-row-actions">
+              <a [href]="'tel:' + job.customerPhone" class="icon-action" aria-label="Call customer">
+                <app-icon name="phone" [size]="16" />
+              </a>
+              <a [href]="whatsAppLink(job.customerPhone)" target="_blank" class="icon-action" aria-label="WhatsApp">
+                <app-icon name="chat" [size]="16" />
+              </a>
+              <a [href]="mapsLink(job)" target="_blank" class="icon-action" aria-label="Navigate">
+                <app-icon name="map-pin" [size]="16" />
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (completedJobs().length) {
+        <h2 class="section-title completed-heading">Completed</h2>
+        <div class="job-list completed-list">
+          @for (job of completedJobs(); track job.id) {
+            <a [routerLink]="['/staff/jobs', job.id]" class="job-row card job-row-done">
+              <span class="job-time">{{ job.scheduledTime }}</span>
+              <div class="job-row-body">
+                <strong>{{ job.address }}</strong>
+                <span class="job-customer">{{ job.customerName }}</span>
+              </div>
+              <span class="staff-status-badge status-completed">Completed</span>
+            </a>
+          }
+        </div>
+      }
+    }
+  }
+</div>

@@ -1,0 +1,94 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Invites</h1>
+    <p>Customer onboarding invites and quote links sent from leads.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="admin-stat-grid invite-stats">
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Total sent</span>
+          <span class="stat-icon"><app-icon name="link" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ invites().length }}</span>
+        <span class="stat-trend trend-neutral">All time</span>
+      </div>
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Pending</span>
+          <span class="stat-icon"><app-icon name="bell" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ pendingCount() }}</span>
+        <span class="stat-trend trend-neutral">Awaiting signup</span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Accepted</span>
+          <span class="stat-icon"><app-icon name="check-circle" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ acceptedCount() }}</span>
+        <span class="stat-trend">
+          <a routerLink="/admin/leads" class="link-sm">From leads inbox →</a>
+        </span>
+      </div>
+    </div>
+
+    @if (invites().length === 0) {
+      <div class="admin-card empty-card">
+        <p>No invites sent yet. Send one from a lead detail page.</p>
+        <a routerLink="/admin/leads" class="admin-btn admin-btn-sm">Go to Leads Inbox</a>
+      </div>
+    } @else {
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <h2>Sent invites</h2>
+          <span class="muted">Live from Mongo `invites` collection</span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Code</th>
+                <th>Property</th>
+                <th>Quote</th>
+                <th>Sent</th>
+                <th>Expires</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (invite of invites(); track invite.id) {
+                <tr>
+                  <td>
+                    <strong>{{ invite.customerName }}</strong>
+                    <br />
+                    <span class="cell-muted">{{ invite.customerEmail }}</span>
+                  </td>
+                  <td><code>{{ invite.code }}</code></td>
+                  <td>{{ invite.property.address }}, {{ invite.property.city }}</td>
+                  <td>{{ invite.quote.quoteRef ?? '—' }} · R{{ invite.quote.basePrice }}</td>
+                  <td>{{ invite.sentAt | date: 'd MMM yyyy' }}</td>
+                  <td>{{ invite.expiresAt | date: 'd MMM yyyy' }}</td>
+                  <td>
+                    <span class="status-pill" [class]="statusClass(invite.status)">{{ invite.status }}</span>
+                  </td>
+                  <td class="actions-col">
+                    <a [routerLink]="invitePath(invite.code)" target="_blank" class="link-sm">Open</a>
+                    <button type="button" class="link-btn" (click)="copyLink(invite.code)">
+                      {{ copiedCode() === invite.code ? 'Copied' : 'Copy link' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</div>

@@ -1,0 +1,64 @@
+.page-head {
+  margin-bottom: var(--spacing-lg);
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.report-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  text-decoration: none;
+  color: inherit;
+
+  strong {
+    display: block;
+    font-size: 0.9375rem;
+  }
+
+  span {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .report-date {
+    font-size: 0.75rem;
+    margin-top: 2px;
+  }
+
+  .report-id {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+  }
+}
+
+.report-icon {
+  color: var(--color-success);
+}

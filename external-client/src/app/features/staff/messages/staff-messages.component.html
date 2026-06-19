@@ -1,0 +1,58 @@
+<div class="page-container staff-page">
+  <header class="page-header">
+    <h1 class="page-title">Messages</h1>
+    <p class="page-subtitle">
+      Customer notes and route updates from today's jobs.
+      @if (unreadCount() > 0) {
+        <span class="unread-pill">{{ unreadCount() }} unread</span>
+      }
+    </p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (!messages().length) {
+    <div class="card empty-card">
+      <app-icon name="chat" [size]="32" />
+      <p>No messages for today's route.</p>
+      <a routerLink="/staff/dashboard" class="btn btn-outline btn-sm">View today's jobs</a>
+    </div>
+  } @else {
+    <div class="message-list">
+      @for (msg of messages(); track msg.id) {
+        <article class="card message-card" [class.unread]="msg.unread" [class.ops]="msg.type === 'operations'">
+          <div class="message-head">
+            <div class="message-from">
+              @if (msg.type === 'operations') {
+                <app-icon name="support" [size]="16" />
+              } @else {
+                <app-icon name="users" [size]="16" />
+              }
+              <strong>{{ msg.from }}</strong>
+            </div>
+            <span>{{ msg.time }}</span>
+          </div>
+          <p>{{ msg.preview }}</p>
+          <div class="message-actions">
+            @if (msg.jobId) {
+              <a [routerLink]="['/staff/jobs', msg.jobId]" class="btn btn-outline btn-sm">View job</a>
+            }
+            @if (msg.phone) {
+              <a [href]="'tel:' + msg.phone" class="icon-action" aria-label="Call">
+                <app-icon name="phone" [size]="16" />
+              </a>
+              <a [href]="whatsAppLink(msg.phone)" target="_blank" class="icon-action" aria-label="WhatsApp">
+                <app-icon name="chat" [size]="16" />
+              </a>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <p class="messages-note">
+    Messages are pulled from job instructions and today's route.
+    <a routerLink="/staff/support">Contact support</a> for urgent issues.
+  </p>
+</div>

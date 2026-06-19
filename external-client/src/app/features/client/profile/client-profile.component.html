@@ -1,0 +1,70 @@
+<div class="page-container">
+  <header class="page-header">
+    <h1 class="page-title">Profile</h1>
+    <p class="page-subtitle">Manage your account details and preferences.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (profile(); as p) {
+      @if (saved()) {
+        <div class="banner-success mb-lg">Profile saved successfully.</div>
+      }
+      @if (error()) {
+        <div class="banner-error mb-lg">{{ error() }}</div>
+      }
+
+      <div class="profile-grid">
+        <div class="card">
+          <div class="avatar-section">
+            <div class="avatar">{{ p.firstName.charAt(0) }}{{ p.lastName.charAt(0) }}</div>
+            <button type="button" class="btn btn-outline btn-sm">Change photo</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First name</label>
+              <input class="form-input" [(ngModel)]="p.firstName" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last name</label>
+              <input class="form-input" [(ngModel)]="p.lastName" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" [value]="p.email" readonly />
+            <p class="field-hint">Contact support to change your login email.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input class="form-input" type="tel" [(ngModel)]="p.phone" />
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="save()">
+            {{ saving() ? 'Saving…' : 'Save changes' }}
+          </button>
+        </div>
+
+        <div class="card">
+          <h3 class="section-heading">Preferences</h3>
+          <div class="form-group">
+            <label class="form-label">Preferred contact</label>
+            <select class="form-select" [(ngModel)]="p.preferredContact">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+              <option value="phone">Phone</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <span>Email reminders</span>
+            <app-toggle [(checked)]="p.emailReminders" />
+          </div>
+          <div class="setting-row">
+            <span>WhatsApp reminders</span>
+            <app-toggle [(checked)]="p.whatsAppReminders" />
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,286 @@
+<div class="page-container">
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (!report()) {
+    <app-empty-state iconName="report" title="Report not found" message="This report may have been removed or the link is incorrect." />
+  } @else {
+    @if (report(); as r) {
+      <a routerLink="/client/reports" class="back-link">
+        <app-icon name="arrow-left" [size]="16" />
+        Back to reports
+      </a>
+
+      <header class="report-header">
+        <div class="report-header-text">
+          <h1 class="page-title">{{ r.serviceType }}</h1>
+          <p class="page-subtitle">{{ propertyName(r) }}, {{ propertyCity(r) }}</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline btn-sm" (click)="downloadPdf()">
+            <app-icon name="download" [size]="14" />
+            Download PDF
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" (click)="shareReport()">
+            <app-icon name="link" [size]="14" />
+            Share report
+          </button>
+          <a routerLink="/client/bookings" class="btn btn-primary btn-sm">
+            Book next clean
+          </a>
+        </div>
+      </header>
+
+      @if (shareMessage()) {
+        <div class="share-toast">{{ shareMessage() }}</div>
+      }
+
+      <div class="summary-bar card">
+        @if (r.propertyImageUrl) {
+          <img [src]="r.propertyImageUrl" [alt]="propertyName(r)" class="summary-thumb" />
+        }
+        <div class="summary-info">
+          <strong>{{ propertyName(r) }}</strong>
+          <span>{{ r.propertyAddress }}</span>
+          <span class="summary-meta">{{ r.panelCount }} panels · {{ r.systemSizeKw }} kW system</span>
+        </div>
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <span class="summary-stat-label">Completed on</span>
+            <strong>{{ r.completedAt | date: 'd MMM yyyy' }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-stat-label">Technician</span>
+            <strong>{{ r.staffName ?? '—' }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-stat-label">Plan</span>
+            <strong>{{ r.planName ?? '—' }}</strong>
+            @if (r.planName) {
+              <span class="plan-active">Active</span>
+            }
+          </div>
+        </div>
+        <div class="summary-status">
+          <span class="status-pill">
+            <app-icon name="check-circle" [size]="14" />
+            Completed
+          </span>
+        </div>
+      </div>
+
+      <section class="section-card card">
+        <div class="section-head">
+          <h2>Before &amp; after photos</h2>
+          <p>Click on any image to view in full screen.</p>
+        </div>
+
+        <div class="photo-columns">
+          <div class="photo-column">
+            <h3>Before cleaning</h3>
+            @if (r.beforePhotos[selectedBeforeIndex()]; as mainBefore) {
+              <button type="button" class="photo-main" (click)="openLightbox('before', selectedBeforeIndex())">
+                <img [src]="mainBefore" alt="Before cleaning — main view" />
+              </button>
+            }
+            <div class="photo-thumbs">
+              @for (photo of r.beforePhotos; track photo; let i = $index) {
+                <button
+                  type="button"
+                  class="photo-thumb"
+                  [class.active]="selectedBeforeIndex() === i"
+                  (click)="selectBefore(i)"
+                >
+                  <img [src]="photo" [alt]="'Before photo ' + (i + 1)" />
+                  <span>Before</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="photo-column">
+            <h3>After cleaning</h3>
+            @if (r.afterPhotos[selectedAfterIndex()]; as mainAfter) {
+              <button type="button" class="photo-main" (click)="openLightbox('after', selectedAfterIndex())">
+                <img [src]="mainAfter" alt="After cleaning — main view" />
+              </button>
+            }
+            <div class="photo-thumbs">
+              @for (photo of r.afterPhotos; track photo; let i = $index) {
+                <button
+                  type="button"
+                  class="photo-thumb"
+                  [class.active]="selectedAfterIndex() === i"
+                  (click)="selectAfter(i)"
+                >
+                  <img [src]="photo" [alt]="'After photo ' + (i + 1)" />
+                  <span>After</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (r.photosTakenAt) {
+          <p class="photos-timestamp">
+            All photos were taken on {{ r.photosTakenAt | date: 'd MMM yyyy' }} at {{ r.photosTakenAt | date: 'h:mm a' }}
+          </p>
+        }
+      </section>
+
+      <div class="content-grid">
+        <section class="section-card card checklist-card">
+          <div class="section-head">
+            <h2>Cleaning checklist</h2>
+            <p>Completed service tasks</p>
+          </div>
+          <ul class="checklist">
+            @for (item of r.checklistSummary; track item) {
+              <li>
+                <span class="check-icon"><app-icon name="check-circle" [size]="18" /></span>
+                {{ item }}
+              </li>
+            }
+          </ul>
+          <div class="checklist-success">
+            <app-icon name="check-circle" [size]="16" />
+            All {{ checklistComplete() }} tasks completed successfully
+          </div>
+        </section>
+
+        <div class="right-stack">
+          <section class="section-card card">
+            <div class="section-head">
+              <h2>Technician notes</h2>
+              <p>Observations and recommendations</p>
+            </div>
+            <p class="technician-notes">{{ r.staffNotes }}</p>
+          </section>
+
+          <section class="section-card card">
+            <div class="section-head">
+              <h2>Property details</h2>
+            </div>
+            <dl class="info-list">
+              <dt>Property</dt>
+              <dd>{{ propertyName(r) }}</dd>
+              <dt>Address</dt>
+              <dd>{{ r.propertyAddress }}</dd>
+              <dt>System size</dt>
+              <dd>{{ r.systemSizeKw ? r.systemSizeKw + ' kW' : '—' }}</dd>
+              <dt>Panels cleaned</dt>
+              <dd>{{ r.panelCount }}</dd>
+              @if (r.beforeKwhReading != null) {
+                <dt>Before kWh reading</dt>
+                <dd>{{ r.beforeKwhReading }} kWh</dd>
+              }
+              @if (r.afterKwhReading != null) {
+                <dt>After kWh reading</dt>
+                <dd>{{ r.afterKwhReading }} kWh</dd>
+              }
+              @if (r.kwhGain != null) {
+                <dt>Production gain</dt>
+                <dd class="kwh-gain-value">+{{ r.kwhGain | number: '1.1-1' }} kWh</dd>
+              }
+              <dt>Roof type</dt>
+              <dd>{{ r.roofType ?? '—' }}</dd>
+              <dt>Access</dt>
+              <dd>{{ shortAccess(r) }}</dd>
+            </dl>
+          </section>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <section class="section-card card insight-card">
+          <div class="insight-icon">
+            <app-icon name="sun" [size]="24" />
+          </div>
+          <div>
+            <h2>Care insight</h2>
+            <p>
+              Your panels were cleaned successfully. Regular cleaning helps reduce dust build-up, supports better
+              light exposure, and helps protect the system over time.
+            </p>
+            @if (r.nextClean) {
+              <p class="insight-next">
+                <strong>Next recommended clean:</strong>
+                {{ r.nextClean.date | date: 'd MMM yyyy' }}
+              </p>
+            }
+            <p class="insight-footer">Keep up the great care!</p>
+          </div>
+        </section>
+
+        @if (r.nextClean; as next) {
+          <section class="section-card card next-clean-card">
+            <h2>Next scheduled clean</h2>
+            <div class="next-clean-body">
+              <div class="next-clean-date">
+                <span class="next-day">{{ next.date | date: 'd' }}</span>
+                <span class="next-month">{{ next.date | date: 'MMM yyyy' | uppercase }}</span>
+              </div>
+              <div class="next-clean-info">
+                <strong>{{ next.timeSlot }}</strong>
+                <span>{{ next.planName }}</span>
+                <span class="subscription-badge">Subscription clean</span>
+              </div>
+            </div>
+            <div class="next-clean-actions">
+              <a [routerLink]="['/client/bookings', next.bookingId]" class="btn btn-outline btn-sm">View booking</a>
+              <button type="button" class="btn btn-primary btn-sm" (click)="openReschedule()">Reschedule</button>
+            </div>
+          </section>
+        }
+      </div>
+
+      <div class="help-bar card">
+        <div class="help-text">
+          <app-icon name="support" [size]="20" />
+          <span>Need assistance? Chat with us on WhatsApp for quick support about this report.</span>
+        </div>
+        <a [href]="'https://wa.me/' + config.supportWhatsApp" target="_blank" class="btn btn-outline btn-sm whatsapp-btn">
+          <app-icon name="chat" [size]="14" />
+          Chat on WhatsApp
+        </a>
+      </div>
+    }
+  }
+</div>
+
+@if (lightbox(); as lb) {
+  <div class="lightbox-backdrop" (click)="closeLightbox()" role="dialog" aria-modal="true">
+    <div class="lightbox-panel" (click)="$event.stopPropagation()">
+      <div class="lightbox-toolbar">
+        <span class="lightbox-label">{{ lb.type === 'before' ? 'Before' : 'After' }} · Photo {{ lb.index + 1 }}</span>
+        <div class="lightbox-actions">
+          <button type="button" class="icon-btn" (click)="zoomOut()" aria-label="Zoom out">−</button>
+          <span class="zoom-level">{{ (lightboxZoom() * 100) | number: '1.0-0' }}%</span>
+          <button type="button" class="icon-btn" (click)="zoomIn()" aria-label="Zoom in">+</button>
+          <button type="button" class="icon-btn" (click)="downloadPhoto()" aria-label="Download photo">
+            <app-icon name="download" [size]="18" />
+          </button>
+          <button type="button" class="icon-btn" (click)="closeLightbox()" aria-label="Close">
+            <app-icon name="close" [size]="18" />
+          </button>
+        </div>
+      </div>
+      <div class="lightbox-image-wrap">
+        <img
+          [src]="lb.url"
+          [alt]="lb.type + ' photo'"
+          [style.transform]="'scale(' + lightboxZoom() + ')'"
+          class="lightbox-image"
+        />
+      </div>
+    </div>
+  </div>
+}
+
+@if (report()?.nextClean?.bookingId; as bookingId) {
+  <app-client-booking-reschedule
+    [open]="rescheduleOpen()"
+    [bookingId]="bookingId"
+    (closed)="closeReschedule()"
+    (rescheduled)="closeReschedule()"
+  />
+}

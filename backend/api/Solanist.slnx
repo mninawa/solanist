@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Solanist.Api/Solanist.Api.csproj" />
+    <Project Path="src/Solanist.Application/Solanist.Application.csproj" />
+    <Project Path="src/Solanist.Bff.Admin/Solanist.Bff.Admin.csproj" />
+    <Project Path="src/Solanist.Bff.Client/Solanist.Bff.Client.csproj" />
+    <Project Path="src/Solanist.Bff.External/Solanist.Bff.External.csproj" />
+    <Project Path="src/Solanist.Bff.Shared/Solanist.Bff.Shared.csproj" />
+    <Project Path="src/Solanist.Domain/Solanist.Domain.csproj" />
+    <Project Path="src/Solanist.Infrastructure/Solanist.Infrastructure.csproj" />
+  </Folder>
+</Solution>

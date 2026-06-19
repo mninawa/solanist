@@ -1,0 +1,146 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  margin-bottom: var(--spacing-md);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.job-hero {
+  position: relative;
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.job-hero-image {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.job-hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--spacing-lg);
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.75), transparent 60%);
+
+  h1 {
+    margin: 0 0 var(--spacing-sm);
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: white;
+  }
+}
+
+.hero-badge {
+  align-self: flex-start;
+}
+
+.detail-card {
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-item {
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.detail-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.detail-item strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.detail-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.detail-inline-link {
+  display: inline-flex;
+  margin-left: 8px;
+  color: var(--color-accent);
+  vertical-align: middle;
+}
+
+.checkin-banner {
+  margin-top: var(--spacing-md);
+}
+
+.issue-alert {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+  }
+}
+
+.completed-banner {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  color: var(--color-success);
+
+  strong {
+    display: block;
+    font-size: 0.9375rem;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+  }
+}
+
+.empty-msg {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--spacing-xl);
+}

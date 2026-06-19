@@ -1,0 +1,98 @@
+<div class="admin-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (lead(); as l) {
+    <div class="page-head">
+      <div>
+        <h1>Lead Conversion Console</h1>
+        <p class="muted">Leads Inbox › {{ l.customerName.split(' ')[0] }}</p>
+      </div>
+      <div class="head-actions">
+        <a routerLink="/admin/leads" class="admin-btn admin-btn-sm">Back to Inbox</a>
+        <button type="button" class="admin-btn admin-btn-sm">More Actions</button>
+      </div>
+    </div>
+
+    <div class="admin-pipeline">
+      @for (step of pipeline; track step.stage) {
+        <div
+          class="admin-pipeline-step"
+          [class.active]="isActive(step.stage, l.pipelineStage)"
+          [class.done]="isDone(step.stage, l.pipelineStage)"
+          role="button"
+          tabindex="0"
+          (click)="advanceStage(step.stage)"
+          (keydown.enter)="advanceStage(step.stage)"
+        >
+          <strong>{{ step.label }}</strong>
+          <span>{{ step.hint }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="quick-actions">
+      <a [href]="'tel:' + l.customerPhone" class="action-tile">
+        <strong>Call</strong>
+        <span>{{ l.customerPhone }}</span>
+      </a>
+      <a class="action-tile">
+        <strong>WhatsApp</strong>
+        <span>Send message</span>
+      </a>
+      <a class="action-tile">
+        <strong>Create Quote</strong>
+        <span>Build new quote</span>
+      </a>
+      <a [routerLink]="['/admin/leads', l.id, 'send-invite']" class="action-tile">
+        <strong>Send Invite</strong>
+        <span>Resend invite link</span>
+      </a>
+      <button type="button" class="action-tile convert" [disabled]="updating()" (click)="markSignedUp()">
+        Mark Signed Up
+      </button>
+    </div>
+
+    <div class="admin-grid-3">
+      <section class="admin-card">
+        <h2>Contact Information</h2>
+        <p><strong>{{ l.customerName }}</strong> <span class="admin-pill pill-new">{{ l.status }}</span></p>
+        <dl class="detail-list compact">
+          <div><dt>Phone</dt><dd>{{ l.customerPhone }}</dd></div>
+          <div><dt>Email</dt><dd>{{ l.customerEmail }}</dd></div>
+          <div><dt>Address</dt><dd>{{ l.propertyAddress }}, {{ l.province }}</dd></div>
+          <div><dt>Source</dt><dd>Bark Email</dd></div>
+          <div><dt>Captured</dt><dd>{{ l.createdAt | date: 'MMM d, HH:mm' }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <h2>Conversation Notes</h2>
+          <button type="button" class="admin-btn admin-btn-sm">Add Note</button>
+        </div>
+        <p class="notes">{{ l.conversationNotes ?? l.notes }}</p>
+        <h3>Activity Timeline</h3>
+        <ul class="timeline">
+          @for (act of l.activities; track act.id) {
+            <li>{{ act.title }} <span class="muted">{{ act.timestamp | date: 'MMM d' }}</span></li>
+          }
+        </ul>
+      </section>
+
+      <section class="admin-card">
+        @if (l.quoteSummary; as q) {
+          <h2>Latest Quote Summary</h2>
+          <span class="admin-pill pill-quote_sent">{{ q.status }}</span>
+          <p><strong>{{ q.ref }}</strong> · {{ q.planName }}</p>
+          <p>{{ q.priceLabel }} · First visit {{ q.firstVisit }}</p>
+          <button type="button" class="admin-btn admin-btn-sm">View Quote</button>
+        }
+        <h3 style="margin-top: 16px">Conversion Insights</h3>
+        <p class="muted">Strong likelihood to convert. High fit for {{ l.recommendedPlan ?? 'Quarterly Solar Care' }}.</p>
+        <span class="admin-pill pill-interested">High Fit</span>
+      </section>
+    </div>
+    }
+  }
+</div>

@@ -1,0 +1,52 @@
+.step-section {
+  padding: var(--spacing-lg);
+}
+
+.step-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 1.125rem;
+    font-weight: 800;
+  }
+}
+
+.step-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.required-badge {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+  border-radius: var(--radius-full);
+}
+
+.checklist-progress {
+  margin-bottom: var(--spacing-lg);
+}
+
+.checklist-wrap {
+  margin-bottom: var(--spacing-md);
+}
+
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-success);
+  background: var(--color-success-muted);
+  border-radius: var(--radius-md);
+}

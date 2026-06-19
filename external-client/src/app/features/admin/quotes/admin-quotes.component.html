@@ -1,0 +1,103 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Quotes</h1>
+    <p>Sent and pending customer quotes.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="admin-stat-grid quote-stats">
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Total Quotes</span>
+          <span class="stat-icon"><app-icon name="report" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ totalCount() }}</span>
+        <span class="stat-trend trend-neutral">In pipeline</span>
+      </div>
+      <div class="admin-stat-card accent-purple">
+        <div class="stat-top">
+          <span class="stat-label">Sent</span>
+          <span class="stat-icon"><app-icon name="mail" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ sentCount() }}</span>
+        <span class="stat-trend trend-neutral">Awaiting response</span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Accepted</span>
+          <span class="stat-icon"><app-icon name="check-circle" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ acceptedCount() }}</span>
+        <span class="stat-trend trend-neutral">Converted to plan</span>
+      </div>
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Pipeline Value</span>
+          <span class="stat-icon"><app-icon name="wallet" [size]="16" /></span>
+        </div>
+        <span class="stat-value">R{{ pipelineValue() | number: '1.0-0' }}</span>
+        <span class="stat-trend trend-neutral">Across quotes</span>
+      </div>
+    </div>
+
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <h2>All quotes</h2>
+        <div class="quote-search">
+          <app-icon name="empty" [size]="16" />
+          <input
+            type="search"
+            [value]="search()"
+            (input)="onSearch($event)"
+            placeholder="Search customer, property, ref…"
+            aria-label="Search quotes"
+          />
+        </div>
+      </div>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Property</th>
+              <th>Quote Ref</th>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (q of filteredQuotes(); track q.id) {
+              <tr>
+                <td><strong>{{ q.customerName }}</strong></td>
+                <td>{{ q.propertyAddress }}, {{ q.city }}</td>
+                <td>{{ q.quoteSummary?.ref ?? q.quoteRef ?? '—' }}</td>
+                <td>{{ q.quoteSummary?.planName ?? q.recommendedPlan ?? '—' }}</td>
+                <td>{{ q.quoteSummary?.priceLabel ?? '—' }}</td>
+                <td><span class="admin-pill" [class]="statusClass(q)">{{ displayStatus(q) }}</span></td>
+                <td><a [routerLink]="['/admin/leads', q.id]" class="link">View lead →</a></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-row">
+                  @if (search().trim()) {
+                    No quotes match “{{ search().trim() }}”.
+                  } @else {
+                    No quotes sent yet.
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="table-footer cell-muted">
+        Showing {{ filteredQuotes().length }} of {{ totalCount() }} quotes
+      </p>
+    </section>
+  }
+</div>

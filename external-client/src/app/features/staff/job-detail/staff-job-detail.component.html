@@ -1,0 +1,87 @@
+@if (job(); as j) {
+  <div class="job-hero">
+    <img [src]="j.heroImageUrl" [alt]="j.address" class="job-hero-image" />
+    <div class="job-hero-overlay">
+      <h2>{{ j.address }}</h2>
+      @if (operationalStatus(); as status) {
+        <span class="staff-status-badge hero-badge" [class]="statusClass(status)">
+          {{ statusLabel(status) }}
+        </span>
+      }
+    </div>
+  </div>
+
+  <div class="staff-job-layout">
+    <div class="staff-job-main">
+      <div class="card detail-card">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Customer</span>
+            <strong>{{ j.customerName }}</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Address</span>
+            <strong>{{ j.address }}, {{ j.city }}, {{ j.postcode }}</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Date &amp; Time</span>
+            <strong>{{ j.scheduledDate | date: 'd MMM yyyy' }}, {{ j.scheduledTime }}</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Plan</span>
+            <strong>{{ j.planType }}</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">System</span>
+            <strong>{{ j.panelCount }} Panels · {{ j.systemSizeKw }} kW</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Roof / Access</span>
+            <strong>{{ j.roofType }} · {{ j.accessShort }}</strong>
+          </div>
+        </div>
+      </div>
+
+      @if (j.instructions) {
+        <div class="staff-notes-card">
+          <h3>Job notes</h3>
+          <p>{{ j.instructions }}</p>
+        </div>
+      }
+
+      @if (!j.checkedInAt && operationalStatus() !== 'completed') {
+        <div class="staff-info-banner">
+          <app-icon name="map-pin" [size]="18" />
+          <span>Please check in when you arrive on site to start this job.</span>
+        </div>
+      }
+    </div>
+
+    @if (primaryAction(); as action) {
+      <aside class="staff-action-card card">
+        <a
+          [routerLink]="action.route"
+          class="btn btn-lg btn-block"
+          [class.btn-primary]="action.variant === 'primary'"
+          [class.btn-success]="action.variant === 'success'"
+        >
+          {{ action.label }}
+        </a>
+        <div class="staff-utilities">
+          <a [href]="getMapsUrl(j)" target="_blank">
+            <app-icon name="map-pin" [size]="16" />
+            Navigate
+          </a>
+          <a [href]="'tel:' + j.customerPhone">
+            <app-icon name="phone" [size]="16" />
+            Call
+          </a>
+          <a [href]="getWhatsAppUrl(j)" target="_blank">
+            <app-icon name="chat" [size]="16" />
+            WhatsApp
+          </a>
+        </div>
+      </aside>
+    }
+  </div>
+}

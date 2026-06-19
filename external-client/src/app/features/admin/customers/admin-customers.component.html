@@ -1,0 +1,125 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Customers</h1>
+    <p>Active subscribers and prospects.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="admin-stat-grid customer-stats">
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Total Customers</span>
+          <span class="stat-icon"><app-icon name="users" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ totalCount() }}</span>
+        <span class="stat-trend trend-neutral">All accounts</span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Active Subscribers</span>
+          <span class="stat-icon"><app-icon name="check-circle" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ activeCount() }}</span>
+        <span class="stat-trend trend-neutral">On a plan</span>
+      </div>
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Prospects</span>
+          <span class="stat-icon"><app-icon name="star" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ prospectCount() }}</span>
+        <span class="stat-trend trend-neutral">Not yet subscribed</span>
+      </div>
+      <div class="admin-stat-card accent-teal">
+        <div class="stat-top">
+          <span class="stat-label">Properties Managed</span>
+          <span class="stat-icon"><app-icon name="home" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ totalProperties() }}</span>
+        <span class="stat-trend trend-neutral">Across all customers</span>
+      </div>
+    </div>
+
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <h2>All customers</h2>
+        <div class="customer-search">
+          <app-icon name="empty" [size]="16" />
+          <input
+            type="search"
+            [value]="search()"
+            (input)="onSearch($event)"
+            placeholder="Search name, email, address…"
+            aria-label="Search customers"
+          />
+        </div>
+      </div>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Contact</th>
+              <th>Properties</th>
+              <th>Plan</th>
+              <th>Address</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (customer of filteredCustomers(); track customer.id; let i = $index) {
+              <tr class="customer-row" (click)="openCustomer(customer.id)" tabindex="0" role="link" [attr.aria-label]="'View ' + customer.name">
+                <td>
+                  <div class="customer-name">
+                    <span class="lead-avatar" [style.background]="avatarColor(i)">{{ initials(customer.name) }}</span>
+                    <strong>{{ customer.name }}</strong>
+                  </div>
+                </td>
+                <td>
+                  {{ customer.email }}
+                  <br />
+                  <span class="cell-muted">{{ customer.phone }}</span>
+                </td>
+                <td>{{ customer.propertyCount }}</td>
+                <td>{{ customer.planName ?? '—' }}</td>
+                <td>{{ customer.primaryAddress }}</td>
+                <td>
+                  <span class="admin-pill" [class]="statusClass(customer.status)">{{ customer.status }}</span>
+                </td>
+                <td class="action-icons" (click)="$event.stopPropagation()">
+                  <a class="action-btn" [href]="telHref(customer.phone)" [attr.aria-label]="'Call ' + customer.name" title="Call">
+                    <app-icon name="phone" [size]="16" />
+                  </a>
+                  <a class="action-btn" [href]="mailtoHref(customer.email)" [attr.aria-label]="'Email ' + customer.name" title="Email">
+                    <app-icon name="mail" [size]="16" />
+                  </a>
+                  <a
+                    class="action-btn whatsapp"
+                    [href]="whatsAppHref(customer.phone)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    [attr.aria-label]="'WhatsApp ' + customer.name"
+                    title="WhatsApp"
+                  >
+                    <app-icon name="chat" [size]="16" />
+                  </a>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-row">No customers match “{{ search().trim() }}”.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="table-footer cell-muted">
+        Showing {{ filteredCustomers().length }} of {{ totalCount() }} customers
+      </p>
+    </section>
+  }
+</div>

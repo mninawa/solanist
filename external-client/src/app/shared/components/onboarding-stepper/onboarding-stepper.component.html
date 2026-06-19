@@ -1,0 +1,34 @@
+<div class="onboarding-topbar">
+  <div class="topbar-inner">
+    <app-logo size="sm" />
+
+    <div class="stepper" aria-label="Onboarding progress">
+      @for (label of labels; track label; let i = $index) {
+        <div
+          class="step"
+          [class.active]="currentStep === i + 1"
+          [class.done]="currentStep > i + 1"
+        >
+          <span class="step-num">
+            @if (currentStep > i + 1) {
+              <app-icon name="check" [size]="14" />
+            } @else {
+              {{ i + 1 }}
+            }
+          </span>
+          <span class="step-label">{{ label }}</span>
+        </div>
+        @if (i < labels.length - 1) {
+          <div class="step-line" [class.done]="currentStep > i + 1"></div>
+        }
+      }
+    </div>
+
+    <div class="progress-meta">
+      <span class="step-counter">Step {{ currentStep }} of {{ labels.length }}</span>
+      <div class="progress-track" aria-hidden="true">
+        <div class="progress-fill" [style.width.%]="progressPercent()"></div>
+      </div>
+    </div>
+  </div>
+</div>

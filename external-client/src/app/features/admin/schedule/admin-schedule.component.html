@@ -1,0 +1,126 @@
+<div class="admin-page">
+  <header class="page-head">
+    <div>
+      <h1>Schedule</h1>
+      <p>{{ todayLabel }} · route planning by area</p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="schedule-stats admin-stat-grid">
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Today's Jobs</span>
+          <span class="stat-icon"><app-icon name="jobs" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ todayJobCount() }}</span>
+        <span class="stat-trend trend-neutral">{{ schedule().length }} areas · <a routerLink="/admin/jobs" class="stat-link">Today's jobs →</a></span>
+      </div>
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Upcoming Bookings</span>
+          <span class="stat-icon"><app-icon name="calendar" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ bookings().length }}</span>
+        <span class="stat-trend trend-neutral">{{ unassignedCount() }} unassigned · <a routerLink="/admin/bookings" class="stat-link">All bookings →</a></span>
+      </div>
+      <div class="admin-stat-card accent-gold">
+        <div class="stat-top">
+          <span class="stat-label">Staff On Duty</span>
+          <span class="stat-icon"><app-icon name="users" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ onDutyCount() }}</span>
+        <a routerLink="/admin/staff" class="stat-trend stat-link">View roster →</a>
+      </div>
+    </div>
+
+    <div class="schedule-grid">
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <h2>Today by Area</h2>
+          <span class="muted">Live from staff jobs</span>
+        </div>
+        @if (schedule().length === 0) {
+          <p class="muted empty-note">No jobs scheduled for today.</p>
+        } @else {
+          @for (area of schedule(); track area.area) {
+            <div class="schedule-area">
+              <strong>{{ area.area }}</strong>
+              <div class="slot-row">
+                @for (slot of area.slots; track slot.time + slot.initials) {
+                  <span class="slot-chip" [class]="slotClass(slot.status)">
+                    {{ slot.time }} {{ slot.initials }}
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        }
+      </section>
+
+      <section class="admin-card">
+        <h2>Staff Load</h2>
+        <ul class="staff-load-list">
+          @for (member of staff(); track member.id) {
+            <li>
+              <div>
+                <strong>{{ member.fullName }}</strong>
+                <span class="muted">{{ member.jobsToday }} jobs today</span>
+              </div>
+              <span class="admin-pill" [class]="donePill(member.completedToday)">{{ member.completedToday }} done</span>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <section class="admin-card bookings-section">
+      <div class="admin-card-header">
+        <h2>Upcoming Bookings</h2>
+        <span class="muted">Assign staff — updates linked staff jobs</span>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Customer</th>
+              <th>Property</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Assign Staff</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of bookings(); track b.id) {
+              <tr>
+                <td>{{ b.bookingRef }}</td>
+                <td><strong>{{ b.customerName }}</strong></td>
+                <td>{{ b.propertyAddress }}</td>
+                <td>{{ b.date | date: 'd MMM yyyy' }}</td>
+                <td>{{ b.timeSlot }}</td>
+                <td>
+                  <select
+                    class="admin-select"
+                    [value]="b.staffId ?? ''"
+                    (change)="assignStaff(b, $any($event.target).value)"
+                    [attr.aria-label]="'Assign staff for ' + b.bookingRef"
+                  >
+                    <option value="">Unassigned</option>
+                    @for (member of staff(); track member.id) {
+                      <option [value]="member.id">{{ member.fullName }}</option>
+                    }
+                  </select>
+                </td>
+                <td><span class="admin-pill" [class]="bookingStatusClass(b.status)">{{ b.status }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

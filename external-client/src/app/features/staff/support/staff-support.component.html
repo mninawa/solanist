@@ -1,0 +1,28 @@
+<div class="page-container">
+  <header class="page-head">
+    <h1>Support</h1>
+    <p>Get help from the operations team while you're in the field.</p>
+  </header>
+
+  <div class="card support-card">
+    <app-icon name="chat" [size]="28" />
+    <h2>WhatsApp support</h2>
+    <p>Fast help for access issues, scheduling changes, or job questions.</p>
+    <a [href]="'https://wa.me/' + config.supportWhatsApp" target="_blank" class="btn btn-primary btn-block">
+      Chat on WhatsApp
+    </a>
+  </div>
+
+  <div class="card support-card">
+    <app-icon name="phone" [size]="28" />
+    <h2>Call operations</h2>
+    <p>{{ config.supportPhone }}</p>
+    <a [href]="'tel:' + config.supportPhone" class="btn btn-outline btn-block">Call now</a>
+  </div>
+
+  <div class="card support-card">
+    <app-icon name="mail" [size]="28" />
+    <h2>Email</h2>
+    <p>{{ config.supportEmail }}</p>
+  </div>
+</div>

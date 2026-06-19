@@ -1,0 +1,81 @@
+# Build validation on every push and PR. Render deploys from main when the repo is
+# connected via Blueprint (see render.yaml + docs/RENDER.md).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/Solanist.Bff.External/Solanist.Bff.External.csproj
+
+      - name: Build
+        run: dotnet build src/Solanist.Bff.External/Solanist.Bff.External.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish src/Solanist.Bff.External/Solanist.Bff.External.csproj -c Release -o /tmp/solanist-bff-publish /p:UseAppHost=false
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: external-client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: external-client/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build BFF image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/api
+          file: backend/api/src/Solanist.Bff.External/Dockerfile
+          push: false
+          tags: solanist/bff-external:ci
+
+      - name: Build app image
+        uses: docker/build-push-action@v6
+        with:
+          context: external-client
+          file: external-client/Dockerfile
+          push: false
+          tags: solanist/external-client:ci

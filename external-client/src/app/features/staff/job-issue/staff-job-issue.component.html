@@ -1,0 +1,41 @@
+<div class="page-container staff-page staff-workflow">
+  <a [routerLink]="['/staff/jobs', jobId]" class="back-link">
+    <app-icon name="arrow-left" [size]="16" />
+    Back to job
+  </a>
+
+  <header class="page-header">
+    <h1 class="page-title">Report an issue</h1>
+    <p class="page-subtitle">{{ propertyName() }}</p>
+  </header>
+
+  <div class="card issue-form">
+    <div class="form-group">
+      <label class="form-label">Issue type</label>
+      <select class="form-select" [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)">
+        @for (entry of issueTypes; track entry[0]) {
+          <option [value]="entry[0]">{{ entry[1] }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="issue-desc">Description</label>
+      <textarea
+        id="issue-desc"
+        class="form-textarea"
+        rows="4"
+        placeholder="Describe what happened..."
+        [ngModel]="description()"
+        (ngModelChange)="description.set($event)"
+      ></textarea>
+    </div>
+
+    <div class="staff-action-bar">
+      <button type="button" class="btn btn-primary" [disabled]="!description().trim() || submitting()" (click)="submit()">
+        {{ submitting() ? 'Submitting...' : 'Submit issue report' }}
+      </button>
+      <a [routerLink]="['/staff/jobs', jobId]" class="btn btn-outline">Cancel</a>
+    </div>
+  </div>
+</div>

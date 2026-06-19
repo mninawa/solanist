@@ -1,0 +1,65 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Issues</h1>
+    <p>Field-reported access and safety issues.</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (!issues().length) {
+    <div class="admin-card empty-card">
+      <app-icon name="check-circle" [size]="32" />
+      <p>No open issues on today's jobs.</p>
+    </div>
+  } @else {
+    <div class="issue-grid">
+      @for (job of issues(); track job.id) {
+        <article class="admin-card issue-card">
+          <div class="issue-head">
+            <strong>{{ job.address }}</strong>
+            <span class="status-pill status-cancelled">Issue</span>
+          </div>
+          <p class="issue-meta">{{ job.customerName }} · {{ job.scheduledTime }}</p>
+          @if (job.issue; as issue) {
+            <p class="issue-desc">{{ issueLabel(issue) }} — {{ issue.description }}</p>
+          }
+        </article>
+      }
+    </div>
+  }
+</div>
+
+<style>
+  .empty-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    text-align: center;
+    color: var(--color-text-secondary);
+  }
+
+  .issue-grid {
+    display: grid;
+    gap: var(--spacing-md);
+  }
+
+  .issue-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .issue-meta {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--spacing-sm);
+  }
+
+  .issue-desc {
+    font-size: 0.875rem;
+    margin: 0;
+  }
+</style>

@@ -1,0 +1,233 @@
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Jobs</h1>
+    <p>{{ todayLabel }} · field operations grouped by status</p>
+  </header>
+
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    <div class="admin-stat-grid job-stats">
+      <div class="admin-stat-card accent-blue">
+        <div class="stat-top">
+          <span class="stat-label">Active today</span>
+          <span class="stat-icon"><app-icon name="jobs" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ activeCount() }}</span>
+        <span class="stat-trend trend-neutral">{{ jobs().length }} on the board</span>
+      </div>
+      <div class="admin-stat-card accent-green">
+        <div class="stat-top">
+          <span class="stat-label">Completed</span>
+          <span class="stat-icon"><app-icon name="check-circle" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ completedCount() }}</span>
+        <span class="stat-trend trend-neutral">Finished cleans</span>
+      </div>
+      <div class="admin-stat-card" [class]="issueCount() > 0 ? 'accent-red' : 'accent-green'">
+        <div class="stat-top">
+          <span class="stat-label">Issues</span>
+          <span class="stat-icon"><app-icon name="shield" [size]="16" /></span>
+        </div>
+        <span class="stat-value">{{ issueCount() }}</span>
+        <span class="stat-trend" [class.negative]="issueCount() > 0" [class.trend-neutral]="issueCount() === 0">
+          @if (issueCount() > 0) {
+            <a routerLink="/admin/issues" class="link-sm">View issues →</a>
+          } @else {
+            All clear
+          }
+        </span>
+      </div>
+    </div>
+
+    @if (jobs().length === 0) {
+      <div class="admin-card empty-card">
+        <p>No jobs scheduled for today.</p>
+        <a routerLink="/admin/schedule" class="admin-btn admin-btn-sm">View schedule</a>
+      </div>
+    } @else {
+      <div class="kanban-board" cdkDropListGroup>
+        @for (column of visibleColumns(); track column.id) {
+          <section class="kanban-column" [class]="'kanban-column--' + column.accent">
+            <header class="kanban-column-header">
+              <div class="kanban-column-title">
+                <span class="kanban-column-icon">
+                  <app-icon [name]="column.icon" [size]="16" />
+                </span>
+                <div>
+                  <h2>{{ column.label }}</h2>
+                  <p>{{ column.hint }}</p>
+                </div>
+              </div>
+              <span class="kanban-count">{{ columnJobs(column).length }}</span>
+            </header>
+
+            <div
+              class="kanban-column-body"
+              cdkDropList
+              [cdkDropListData]="columnJobs(column)"
+              [cdkDropListSortingDisabled]="true"
+              (cdkDropListDropped)="dropJob($event, column)"
+            >
+              @for (job of columnJobs(column); track job.id) {
+                <article
+                  class="kanban-card"
+                  cdkDrag
+                  [cdkDragData]="job"
+                  [ngClass]="[
+                    'kanban-card--' + statusAccent(job.operationalStatus),
+                    job.operationalStatus === 'issue_reported' ? 'kanban-card--issue' : '',
+                  ]"
+                  [class.kanban-card--updating]="updatingId() === job.id"
+                >
+                  <div class="kanban-card-body" cdkDragHandle>
+                    <div class="kanban-card-top">
+                      <span class="kanban-route">#{{ job.routeOrder }}</span>
+                      <span class="kanban-status-pill">{{ statusLabel(job.operationalStatus) }}</span>
+                    </div>
+
+                    <div class="kanban-time">
+                      <app-icon name="schedule" [size]="14" />
+                      {{ job.scheduledTime }}
+                    </div>
+
+                    <div class="kanban-customer">
+                      <span class="kanban-avatar">{{ customerInitials(job.customerName) }}</span>
+                      <div>
+                        <strong>{{ job.customerName }}</strong>
+                        <span class="kanban-phone">{{ job.customerPhone }}</span>
+                      </div>
+                    </div>
+
+                    <div class="kanban-meta">
+                      <span class="kanban-meta-row">
+                        <app-icon name="map-pin" [size]="14" />
+                        {{ job.address }}, {{ job.city }}
+                      </span>
+                    </div>
+
+                    <div class="kanban-plan">
+                      {{ job.planType }}
+                      <span>· {{ job.panelCount }} panels · {{ job.roofType }}</span>
+                    </div>
+                  </div>
+
+                  @if (job.operationalStatus === 'issue_reported') {
+                    <footer class="kanban-card-footer">
+                      <button
+                        type="button"
+                        class="kanban-issue-link"
+                        (mousedown)="$event.stopPropagation()"
+                        (click)="openIssueDrawer(job.id)"
+                      >
+                        View issue details →
+                      </button>
+                    </footer>
+                  }
+                </article>
+              } @empty {
+                <div class="kanban-empty">
+                  <app-icon [name]="column.icon" [size]="22" />
+                  <p>No {{ column.label | lowercase }} jobs</p>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    }
+  }
+</div>
+
+@if (selectedIssue(); as job) {
+  <div class="issue-drawer-backdrop" (click)="closeIssueDrawer()">
+    <aside
+      class="issue-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="issue-drawer-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="issue-drawer-header">
+        <div class="issue-drawer-header-top">
+          <span class="issue-drawer-badge">Route #{{ job.routeOrder }}</span>
+          <h2 id="issue-drawer-title">Issue details</h2>
+          <button type="button" class="issue-drawer-close" aria-label="Close" (click)="closeIssueDrawer()">
+            <app-icon name="close" [size]="18" />
+          </button>
+        </div>
+        <p class="issue-drawer-subtitle">{{ job.customerName }} · {{ job.scheduledTime }}</p>
+      </header>
+
+      <div class="issue-drawer-body">
+        @if (issueDrawerLoading()) {
+          <app-loading-state />
+        } @else {
+          @if (job.issue; as jobIssue) {
+          <section class="issue-drawer-section issue-drawer-alert">
+            <div class="issue-drawer-section-head">
+              <app-icon name="shield" [size]="18" />
+              <strong>{{ issueLabel(jobIssue) }}</strong>
+            </div>
+            <p class="issue-drawer-description">{{ jobIssue.description }}</p>
+            <p class="issue-drawer-reported">
+              Reported {{ jobIssue.reportedAt | date: 'd MMM yyyy, HH:mm' }}
+            </p>
+          </section>
+
+          <section class="issue-drawer-section">
+            <h3>Job</h3>
+            <dl class="issue-drawer-meta">
+              <div>
+                <dt>Customer</dt>
+                <dd>{{ job.customerName }}</dd>
+              </div>
+              <div>
+                <dt>Phone</dt>
+                <dd>{{ job.customerPhone }}</dd>
+              </div>
+              <div>
+                <dt>Address</dt>
+                <dd>{{ job.address }}, {{ job.city }}</dd>
+              </div>
+              <div>
+                <dt>Plan</dt>
+                <dd>{{ job.planType }} · {{ job.panelCount }} panels · {{ job.roofType }}</dd>
+              </div>
+              <div>
+                <dt>Access</dt>
+                <dd>{{ job.accessShort }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          @if (job.instructions) {
+            <section class="issue-drawer-section">
+              <h3>Instructions</h3>
+              <p class="issue-drawer-notes">{{ job.instructions }}</p>
+            </section>
+          }
+
+          @if (job.accessNotes) {
+            <section class="issue-drawer-section">
+              <h3>Access notes</h3>
+              <p class="issue-drawer-notes">{{ job.accessNotes }}</p>
+            </section>
+          }
+          } @else {
+            <p class="issue-drawer-empty">No issue details available for this job.</p>
+          }
+        }
+      </div>
+
+      <footer class="issue-drawer-footer">
+        <a routerLink="/admin/issues" class="admin-btn admin-btn-sm" (click)="closeIssueDrawer()">
+          All issues
+        </a>
+        <button type="button" class="admin-btn admin-btn-sm admin-btn-primary" (click)="closeIssueDrawer()">
+          Close
+        </button>
+      </footer>
+    </aside>
+  </div>
+}

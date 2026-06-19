@@ -1,0 +1,35 @@
+@if (ws.job(); as j) {
+  <section class="step-section card checkin-section">
+  @if (!j.checkedInAt) {
+    <div class="checkin-center">
+      <div class="checkin-pin">
+        <app-icon name="map-pin" [size]="40" />
+      </div>
+      <h2>Check in at {{ j.address }}</h2>
+      <p>You are about to start this cleaning job. Please confirm you are on site.</p>
+
+      <dl class="checkin-summary">
+        <div><dt>Booking ID</dt><dd>{{ j.bookingId }}</dd></div>
+        <div><dt>Scheduled</dt><dd>{{ j.scheduledTime }}</dd></div>
+        <div><dt>Date</dt><dd>{{ j.scheduledDate }}</dd></div>
+        <div><dt>Technician</dt><dd>James Mitchell</dd></div>
+      </dl>
+
+      <div class="staff-info-banner">
+        <app-icon name="map-pin" [size]="18" />
+        <span>We will capture your location and time when you check in.</span>
+      </div>
+
+      <button type="button" class="btn btn-success btn-lg" [disabled]="checkingIn()" (click)="checkIn()">
+        {{ checkingIn() ? 'Checking in...' : 'Check In Now' }}
+      </button>
+    </div>
+  } @else {
+    <div class="checkin-done">
+      <app-icon name="check-circle" [size]="48" />
+      <h2>Checked in successfully</h2>
+      <p>{{ j.checkedInAt | date: 'h:mm a' }} · Location captured</p>
+    </div>
+  }
+  </section>
+}

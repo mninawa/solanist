@@ -1,0 +1,287 @@
+<div class="admin-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else {
+    @if (lead(); as l) {
+    <a routerLink="/admin/leads" class="back-link">← Back to Leads Inbox</a>
+
+    <header class="lead-hero">
+      <div class="lead-hero-main">
+        <span class="lead-avatar hero-avatar">{{ firstName(l.customerName).charAt(0) }}</span>
+        <div>
+          <h1>{{ firstName(l.customerName) }} <span class="star">★</span></h1>
+          <p class="muted">{{ l.propertyAddress }}, {{ l.postcode }} {{ l.province }}</p>
+        </div>
+      </div>
+      <div class="lead-meta-badges">
+        <span class="meta-badge">B Bark.com</span>
+        <span class="admin-pill" [class]="l.urgency === 'urgent' ? 'pill-urgent' : 'pill-normal'">
+          @if (l.urgency === 'urgent') { 🔥 } {{ l.urgency }}
+        </span>
+        <span class="meta-badge">☀ {{ l.serviceType }}</span>
+        <div class="score-badge">
+          <div class="admin-score-ring small">{{ l.leadScore }}/100</div>
+        </div>
+        <span class="admin-pill pill-new">{{ l.status }}</span>
+        <span class="muted">Received {{ l.createdAt | date: 'MMM d, HH:mm' }}</span>
+      </div>
+    </header>
+
+    <div class="admin-action-row">
+      <a [href]="'tel:' + l.customerPhone" class="admin-btn admin-btn-sm">Call</a>
+      <a
+        [href]="whatsAppHref(l.customerPhone)"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="admin-btn admin-btn-sm whatsapp"
+      >WhatsApp</a>
+      <a [routerLink]="['/admin/leads', l.id, 'conversion']" class="admin-btn admin-btn-sm">Create Quote</a>
+      <button type="button" class="admin-btn admin-btn-sm" [disabled]="updating()" (click)="markWon()">Mark Won</button>
+      <button type="button" class="admin-btn admin-btn-sm" [disabled]="updating()" (click)="markLost()">Mark Lost</button>
+      @if (l.inviteCode) {
+        <a [routerLink]="['/invite', l.inviteCode]" target="_blank" class="admin-btn admin-btn-sm">Open Invite</a>
+      }
+      <button
+        type="button"
+        class="admin-btn admin-btn-sm admin-btn-primary"
+        [disabled]="updating()"
+        (click)="sendInvite()"
+      >
+        {{ updating() ? 'Sending…' : l.inviteCode ? 'Resend Invite' : 'Send Invite' }}
+      </button>
+      <a [routerLink]="['/admin/leads', l.id, 'send-invite']" class="admin-btn admin-btn-sm">Customize</a>
+    </div>
+
+    @if (inviteError()) {
+      <p class="invite-feedback error">{{ inviteError() }}</p>
+    }
+    @if (inviteSuccess() && l.inviteCode) {
+      <p class="invite-feedback success">
+        Invite sent! Share
+        <a [href]="inviteUrl(l.inviteLink)" target="_blank">{{ inviteUrl(l.inviteLink) }}</a>
+      </p>
+    }
+
+    @if (l.inviteCode) {
+      <section class="admin-card invite-funnel-banner">
+        <strong>Invite sent</strong>
+        <span class="muted">Code {{ l.inviteCode }} · Pipeline: {{ l.pipelineStage }}</span>
+        <a [href]="inviteUrl(l.inviteLink)" target="_blank" class="link-sm">{{ inviteUrl(l.inviteLink) }}</a>
+      </section>
+    }
+
+    <div class="admin-grid-3">
+      <div class="col-left">
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Contact Information</h2>
+            @if (!editingContact()) {
+              <button type="button" class="admin-btn admin-btn-sm" (click)="startEditContact()">Edit</button>
+            }
+          </div>
+          @if (editingContact()) {
+            <form class="contact-form" (ngSubmit)="saveContact()">
+              <label>
+                <span>Name</span>
+                <input type="text" [(ngModel)]="contactForm.customerName" name="customerName" required />
+              </label>
+              <label>
+                <span>Phone</span>
+                <input type="tel" [(ngModel)]="contactForm.customerPhone" name="customerPhone" required />
+              </label>
+              <label>
+                <span>Email</span>
+                <input type="email" [(ngModel)]="contactForm.customerEmail" name="customerEmail" required />
+              </label>
+              <label>
+                <span>Address</span>
+                <input type="text" [(ngModel)]="contactForm.propertyAddress" name="propertyAddress" required />
+              </label>
+              <label>
+                <span>City</span>
+                <input type="text" [(ngModel)]="contactForm.city" name="city" required />
+              </label>
+              <label>
+                <span>Best time</span>
+                <input type="text" [(ngModel)]="contactForm.bestTimeToContact" name="bestTimeToContact" />
+              </label>
+              <label>
+                <span>Preferred contact</span>
+                <input type="text" [(ngModel)]="contactForm.preferredContact" name="preferredContact" />
+              </label>
+              @if (contactError()) {
+                <p class="form-error">{{ contactError() }}</p>
+              }
+              <div class="form-actions">
+                <button type="button" class="admin-btn admin-btn-sm" [disabled]="updating()" (click)="cancelEditContact()">
+                  Cancel
+                </button>
+                <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary" [disabled]="updating()">
+                  Save
+                </button>
+              </div>
+            </form>
+          } @else {
+            <dl class="detail-list">
+              <div><dt>Phone</dt><dd>{{ l.customerPhone }}</dd></div>
+              <div><dt>Email</dt><dd>{{ l.customerEmail }}</dd></div>
+              <div><dt>Address</dt><dd>{{ l.propertyAddress }}, {{ l.city }}</dd></div>
+              @if (l.bestTimeToContact) {
+                <div><dt>Best time</dt><dd>{{ l.bestTimeToContact }}</dd></div>
+              }
+              @if (l.preferredContact) {
+                <div><dt>Preferred contact</dt><dd>{{ l.preferredContact }}</dd></div>
+              }
+            </dl>
+          }
+        </section>
+
+        <section class="admin-card">
+          <h2>Lead Tags</h2>
+          <div class="tag-row">
+            @for (tag of l.tags; track tag.label) {
+              <span class="admin-tag tag-{{ tag.tone }}">{{ tag.label }}</span>
+            }
+            @if (!addingTag()) {
+              <button type="button" class="admin-btn admin-btn-sm" (click)="startAddTag()">+ Add Tag</button>
+            }
+          </div>
+          @if (addingTag()) {
+            <form class="inline-form tag-form" (ngSubmit)="saveTag()">
+              <input type="text" [(ngModel)]="newTagLabel" name="tagLabel" placeholder="Tag label" required />
+              <select [(ngModel)]="newTagTone" name="tagTone" aria-label="Tag color">
+                @for (tone of tagTones; track tone) {
+                  <option [value]="tone">{{ tone }}</option>
+                }
+              </select>
+              @if (tagError()) {
+                <p class="form-error">{{ tagError() }}</p>
+              }
+              <div class="form-actions">
+                <button type="button" class="admin-btn admin-btn-sm" [disabled]="updating()" (click)="cancelAddTag()">
+                  Cancel
+                </button>
+                <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary" [disabled]="updating()">
+                  Add
+                </button>
+              </div>
+            </form>
+          }
+        </section>
+
+        <section class="admin-card">
+          <h2>Property / Job Details</h2>
+          <dl class="detail-list">
+            <div><dt>Estimated Panels</dt><dd>{{ l.estimatedPanelsRange ?? l.panelCount }} panels</dd></div>
+            <div><dt>Roof Type</dt><dd>{{ l.roofType }}</dd></div>
+            @if (l.accessNotes) {
+              <div><dt>Access</dt><dd>{{ l.accessNotes }}</dd></div>
+            }
+            @if (l.preferredServiceTime) {
+              <div><dt>Preferred Time</dt><dd>{{ l.preferredServiceTime }}</dd></div>
+            }
+            <div><dt>Notes</dt><dd>{{ l.notes }}</dd></div>
+          </dl>
+        </section>
+
+        @if (l.checklist.length) {
+          <section class="admin-card">
+            <h2>Before-Visit Checklist</h2>
+            <ul class="checklist">
+              @for (item of l.checklist; track item.label) {
+                <li [class.done]="item.done">
+                  {{ item.done ? '✓' : '○' }} {{ item.label }}
+                  @if (item.date) { <span class="muted"> — {{ item.date }}</span> }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      <div class="col-mid">
+        <section class="admin-card">
+          <h2>Request Notes</h2>
+          <p class="notes-block">{{ l.requestSnippet }}</p>
+        </section>
+
+        <section class="admin-card">
+          <h2>Activity Timeline</h2>
+          <ul class="timeline">
+            @for (act of l.activities; track act.id) {
+              <li>
+                <strong>{{ act.title }}</strong>
+                @if (act.description) {
+                  <span class="muted">{{ act.description }}</span>
+                }
+                <time class="muted">{{ act.timestamp | date: 'MMM d, HH:mm' }}</time>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-card-header">
+            <h2>Conversation Notes</h2>
+            @if (!addingNote()) {
+              <button type="button" class="admin-btn admin-btn-sm" (click)="startAddNote()">Add Note</button>
+            }
+          </div>
+          @if (addingNote()) {
+            <form class="inline-form" (ngSubmit)="saveNote()">
+              <textarea
+                [(ngModel)]="newNoteText"
+                name="newNote"
+                rows="3"
+                placeholder="Call summary, follow-up details…"
+                required
+              ></textarea>
+              @if (noteError()) {
+                <p class="form-error">{{ noteError() }}</p>
+              }
+              <div class="form-actions">
+                <button type="button" class="admin-btn admin-btn-sm" [disabled]="updating()" (click)="cancelAddNote()">
+                  Cancel
+                </button>
+                <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary" [disabled]="updating()">
+                  Save
+                </button>
+              </div>
+            </form>
+          }
+          @if (l.conversationNotes) {
+            <p class="notes-block">{{ l.conversationNotes }}</p>
+          } @else if (!addingNote()) {
+            <p class="notes-block muted">No conversation notes yet.</p>
+          }
+        </section>
+      </div>
+
+      <div class="col-right">
+        <section class="admin-card ai-widget">
+          <h2>☀ Solanist Assistant <span class="ai-badge">AI</span></h2>
+          <p><strong>Suggested next step</strong></p>
+          <p class="muted">Send quote via WhatsApp with personalised invite link.</p>
+          <a [routerLink]="['/admin/leads', l.id, 'send-invite']" class="admin-btn admin-btn-primary admin-btn-sm">Send Quote</a>
+          <hr />
+          <p><strong>Recommended quote range</strong></p>
+          <p class="muted">R1,450 – R2,150 based on panels & location</p>
+          <a [routerLink]="['/admin/leads', l.id, 'conversion']" class="admin-btn admin-btn-sm">Create Quote</a>
+        </section>
+
+        <section class="admin-card">
+          <h2>Recent Leads Nearby</h2>
+          <ul class="admin-widget-list">
+            @for (near of l.nearbyLeads; track near.name) {
+              <li>
+                <span>{{ near.name }} · {{ near.location }}</span>
+                <strong>{{ near.score }}</strong>
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+    </div>
+    }
+  }
+</div>

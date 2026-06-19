@@ -1,0 +1,179 @@
+<div class="admin-app-shell">
+  <aside class="admin-sidebar" aria-label="Admin navigation">
+    <a routerLink="/admin/dashboard" class="admin-sidebar-brand">
+      <span class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 15 L12 15 L16 4 L10 4 Z" />
+          <path d="M16 15 L22 15 L26 4 L20 4 Z" />
+          <path d="M6 28 L12 28 L16 17 L10 17 Z" />
+          <path d="M16 28 L22 28 L26 17 L20 17 Z" />
+        </svg>
+      </span>
+      <div>
+        <strong>Solanist</strong>
+        <span>Solar Care</span>
+      </div>
+    </a>
+
+    <nav class="admin-nav">
+      @for (link of navLinks(); track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+          class="admin-nav-link"
+          (click)="closeMobileNav()"
+        >
+          <app-icon [name]="link.icon" [size]="18" />
+          <span class="label">{{ link.label }}</span>
+          @if (link.badge) {
+            <span class="admin-nav-badge">{{ link.badge }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <p class="admin-sidebar-promo">Powering growth. One panel at a time.</p>
+
+    @if (user(); as u) {
+      <div class="admin-sidebar-account">
+        <span class="account-avatar">{{ u.firstName.charAt(0) }}{{ u.lastName.charAt(0) }}</span>
+        <div>
+          <strong>{{ u.firstName }} {{ u.lastName }}</strong>
+          <span>Pro Plan</span>
+        </div>
+      </div>
+      <button type="button" class="admin-sidebar-logout" (click)="logout()">
+        <app-icon name="logout" [size]="16" />
+        Sign out
+      </button>
+    }
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-mobile-header">
+      <button type="button" class="admin-btn admin-btn-ghost admin-btn-sm" (click)="toggleMobileNav()">
+        <app-icon name="menu" [size]="20" />
+      </button>
+      <strong>Solanist Admin</strong>
+      <button type="button" class="admin-btn admin-btn-ghost admin-btn-sm" (click)="logout()">
+        <app-icon name="logout" [size]="20" />
+      </button>
+    </header>
+
+  @if (mobileNavOpen) {
+    <aside class="mobile-drawer admin-drawer drawer-open">
+      <nav class="admin-nav" style="padding: 16px">
+        @for (link of navLinks(); track link.path) {
+          <a
+            [routerLink]="link.path"
+            routerLinkActive="active"
+            class="admin-nav-link"
+            (click)="closeMobileNav()"
+          >
+            <app-icon [name]="link.icon" [size]="18" />
+            <span class="label">{{ link.label }}</span>
+          </a>
+        }
+        <button type="button" class="admin-nav-link admin-nav-logout" (click)="logout()">
+          <app-icon name="logout" [size]="18" />
+          <span class="label">Sign out</span>
+        </button>
+      </nav>
+    </aside>
+    <button type="button" class="drawer-backdrop visible" (click)="closeMobileNav()"></button>
+  }
+
+    <header class="admin-topbar">
+      <div class="admin-search-wrap" (click)="onSearchPanelClick($event)">
+        <div class="admin-search">
+          <app-icon name="empty" [size]="16" />
+          <input
+            #searchInput
+            type="search"
+            [(ngModel)]="searchQuery"
+            (input)="onSearchInput($event)"
+            (focus)="onSearchFocus($event)"
+            placeholder="Search leads, customers, locations..."
+            aria-label="Search"
+            autocomplete="off"
+          />
+          <kbd>⌘ K</kbd>
+        </div>
+        @if (searchOpen()) {
+          <div class="admin-search-panel">
+            @if (searchLoading()) {
+              <p class="search-panel-empty">Searching…</p>
+            } @else if (searchHits().length === 0) {
+              <p class="search-panel-empty">No results for “{{ searchQuery.trim() }}”</p>
+            } @else {
+              <ul class="search-hit-list">
+                @for (hit of searchHits(); track hit.id + hit.type) {
+                  <li>
+                    <button type="button" class="search-hit" (click)="openHit(hit)">
+                      <span class="search-hit-type">{{ hit.type }}</span>
+                      <span class="search-hit-body">
+                        <strong>{{ hit.title }}</strong>
+                        <span>{{ hit.subtitle }}</span>
+                      </span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </div>
+      <div class="admin-topbar-actions">
+        <button
+          type="button"
+          class="admin-btn admin-btn-sm"
+          [disabled]="importingBark()"
+          (click)="importBarkEmails()"
+        >
+          {{ importingBark() ? 'Importing…' : 'Import Bark Emails' }}
+        </button>
+        <a routerLink="/admin/leads/new" class="admin-btn admin-btn-primary admin-btn-sm">+ New Lead</a>
+        @if (user(); as u) {
+          <div class="admin-user-menu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="admin-avatar-btn"
+              [class.is-open]="userMenuOpen()"
+              [attr.aria-expanded]="userMenuOpen()"
+              aria-label="Account menu"
+              (click)="toggleUserMenu($event)"
+            >
+              <span class="admin-avatar">{{ u.firstName.charAt(0) }}{{ u.lastName.charAt(0) }}</span>
+              <app-icon name="chevron-down" [size]="14" />
+            </button>
+
+            @if (userMenuOpen()) {
+              <div class="admin-user-dropdown">
+                <div class="admin-user-dropdown-head">
+                  <span class="admin-avatar admin-avatar--lg">{{ u.firstName.charAt(0) }}{{ u.lastName.charAt(0) }}</span>
+                  <div class="admin-user-dropdown-id">
+                    <strong>{{ u.firstName }} {{ u.lastName }}</strong>
+                    <span>{{ u.email }}</span>
+                  </div>
+                </div>
+                <a routerLink="/admin/settings" class="admin-user-item" (click)="closeUserMenu()">
+                  <app-icon name="settings" [size]="16" />
+                  Settings
+                </a>
+                <button type="button" class="admin-user-item admin-user-item--danger" (click)="logout()">
+                  <app-icon name="logout" [size]="16" />
+                  Sign out
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

@@ -1,0 +1,130 @@
+<div class="admin-page">
+  @if (loading()) {
+    <app-loading-state />
+  } @else if (error()) {
+    <div class="admin-card">
+      <p class="error-text">{{ error() }}</p>
+      <a routerLink="/admin/leads" class="admin-btn admin-btn-sm">Back to Leads</a>
+    </div>
+  } @else {
+    @if (lead(); as l) {
+    <div class="breadcrumb-row">
+      <p class="muted">Leads Inbox / {{ l.customerName.split(' ')[0] }} / Send Invite</p>
+      <a [routerLink]="['/admin/leads', l.id]" class="admin-btn admin-btn-sm">← Back to Lead</a>
+    </div>
+
+    <div class="invite-grid">
+      <div class="col">
+        <section class="admin-card">
+          <h2>{{ l.customerName }}</h2>
+          <span class="admin-pill pill-new">{{ l.status }}</span>
+          <p class="muted">{{ l.propertyAddress }}, {{ l.postcode }}</p>
+          <p>{{ l.customerPhone }} · WhatsApp</p>
+        </section>
+
+        <section class="admin-card">
+          <h2>Selected Offer</h2>
+          <p><strong>{{ l.recommendedPlan ?? 'Quarterly Solar Care' }}</strong> <span class="admin-tag tag-gold">Recommended</span></p>
+          <p>R399 / month</p>
+          <ul class="feature-list">
+            <li>✓ 4 professional cleans per year</li>
+            <li>✓ WhatsApp reminders</li>
+            <li>✓ Before & after photo report</li>
+          </ul>
+        </section>
+
+        <section class="admin-card">
+          <h2>Invite Settings</h2>
+          <label class="field">
+            <span>Invite Link</span>
+            <div class="link-row">
+              <input type="text" readonly [value]="inviteUrl(l.inviteLink)" />
+              <button type="button" class="admin-btn admin-btn-sm" (click)="copyLink(l.inviteLink)">Copy</button>
+            </div>
+            @if (!l.inviteLink) {
+              <p class="muted">Invite link will be generated when you send.</p>
+            }
+          </label>
+          <label class="field">
+            <span>Link Expires</span>
+            <select class="admin-select full" [value]="expiryDays()" (change)="expiryDays.set(+$any($event.target).value)">
+              <option [value]="7">7 days</option>
+              <option [value]="14">14 days</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Assign to team member</span>
+            <select class="admin-select full">
+              <option>James van der Merwe</option>
+              <option>Sipho Ndlovu</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Share via</span>
+            <select class="admin-select full">
+              <option>WhatsApp</option>
+              <option>Email</option>
+            </select>
+          </label>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="admin-card">
+          <h2>WhatsApp Invite Template</h2>
+          <div class="tag-buttons">
+            <button type="button" class="admin-btn admin-btn-sm">+ Customer Name</button>
+            <button type="button" class="admin-btn admin-btn-sm">+ Invite Link</button>
+            <button type="button" class="admin-btn admin-btn-sm">+ Offer Name</button>
+          </div>
+          <textarea class="template-input" rows="10" [value]="messageTemplate"></textarea>
+          <div class="template-actions">
+            <button type="button" class="admin-btn admin-btn-sm">Reset to default</button>
+            <button type="button" class="admin-btn admin-btn-sm" (click)="copyLink(l.inviteLink)">Copy Link</button>
+            <button
+              type="button"
+              class="admin-btn admin-btn-primary admin-btn-sm"
+              [disabled]="sending()"
+              (click)="sendNow()"
+            >
+              {{ sending() ? 'Sending…' : sent() ? 'Sent ✓' : 'Send Now' }}
+            </button>
+          </div>
+          @if (sent() && l.inviteCode) {
+            <p class="success-text">
+              Invite sent! Share
+              <a [href]="inviteUrl(l.inviteLink)" target="_blank">{{ inviteUrl(l.inviteLink) }}</a>
+            </p>
+          }
+          @if (error()) {
+            <p class="error-text">{{ error() }}</p>
+          }
+        </section>
+
+        <section class="admin-card">
+          <h2>Follow-up Automation</h2>
+          <label class="toggle-row">
+            <span>Reminder after 24 hours</span>
+            <input type="checkbox" [checked]="reminder24h()" (change)="reminder24h.set(!reminder24h())" />
+          </label>
+          <label class="toggle-row">
+            <span>Reminder after 3 days</span>
+            <input type="checkbox" [checked]="reminder3d()" (change)="reminder3d.set(!reminder3d())" />
+          </label>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="admin-card phone-preview">
+          <h2>WhatsApp Preview</h2>
+          <div class="phone-frame">
+            <div class="wa-bubble">{{ previewMessage(l) }}</div>
+            <p class="muted sender">James van der Merwe</p>
+          </div>
+          <p class="security-note">🔒 Secure & personalised. Each invite link is unique and expires automatically.</p>
+        </section>
+      </div>
+    </div>
+    }
+  }
+</div>

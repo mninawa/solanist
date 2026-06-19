@@ -1,0 +1,15 @@
+{
+  "name": "solanist",
+  "private": true,
+  "description": "Solanist monorepo — use npm run deploy after any build",
+  "scripts": {
+    "build": "docker compose build",
+    "deploy": "docker compose up --build -d",
+    "up": "docker compose up --build",
+    "down": "docker compose down",
+    "restart": "docker compose down && docker compose up --build -d",
+    "logs": "docker compose logs -f",
+    "ps": "docker compose ps",
+    "smoke": "bash scripts/smoke-test.sh"
+  }
+}

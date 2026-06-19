@@ -1,0 +1,305 @@
+@if (loading()) {
+  <app-loading-state />
+} @else if (!allowed()) {
+  <div class="signup-blocked">
+    <div class="blocked-card card card-elevated">
+      <app-logo />
+      <div class="blocked-icon"><app-icon name="link" [size]="40" /></div>
+      <h1>Signup is invite-only</h1>
+      <p class="blocked-message">
+        New accounts are created from a personal invite. Use the link your Solanist contact sent
+        you, or reach out and we'll get you set up.
+      </p>
+      <a [href]="'mailto:' + supportEmail" class="btn btn-primary btn-lg btn-block">Request access</a>
+      <a routerLink="/login" class="btn btn-secondary btn-block blocked-secondary">Already have an account? Log in</a>
+    </div>
+  </div>
+} @else if (step() === 5) {
+  <div class="confirmation-page">
+    <div class="confirmation-card card card-elevated">
+      <div class="confirmation-icon">
+        <app-icon name="check-circle" [size]="56" />
+      </div>
+      <h1>You're all set!</h1>
+      <p class="confirmation-subtitle">Welcome to Solanist. Your account and first booking are confirmed.</p>
+
+      <div class="confirmation-summary">
+        @if (selectedPlan; as plan) {
+          <div class="summary-row">
+            <span class="label">Plan</span>
+            <span class="value">{{ plan.name }}</span>
+          </div>
+        }
+        <div class="summary-row">
+          <span class="label">First visit</span>
+          <span class="value">{{ preferredDate() | date: 'd MMM yyyy' }} · {{ selectedTimeLabel }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Property</span>
+          <span class="value">{{ address() }}, {{ city() }}</span>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-lg btn-block" (click)="goToDashboard()">
+        Go to my dashboard
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="onboarding">
+    <app-onboarding-stepper [labels]="stepLabels" [currentStep]="step()" />
+
+    <div class="onboarding-layout">
+      <div class="onboarding-main">
+        @if (step() === 1) {
+          <header class="step-header">
+            <div class="step-icon"><app-icon name="subscription" [size]="22" /></div>
+            <div>
+              <h2>Choose your plan</h2>
+              <p class="step-desc">Pick the care schedule that fits your property. You can change plans anytime in the portal.</p>
+            </div>
+          </header>
+
+          @if (plans().length) {
+            <div class="plans-grid">
+              @for (plan of plans(); track plan.id) {
+                <app-plan-card
+                  [plan]="plan"
+                  [selected]="selectedPlanId() === plan.id"
+                  (select)="selectPlan($event)"
+                />
+              }
+            </div>
+          } @else {
+            <p class="empty-note">No plans are available right now. Please contact Solanist.</p>
+          }
+        }
+
+        @if (step() === 2) {
+          <header class="step-header">
+            <div class="step-icon"><app-icon name="home" [size]="22" /></div>
+            <div>
+              <h2>Property details</h2>
+              <p class="step-desc">Tell us where to clean and how to access the roof so our technicians arrive prepared.</p>
+            </div>
+          </header>
+
+          <div class="step-panel card">
+            <div class="form-grid">
+              <div class="form-group form-group-full">
+                <label class="form-label" for="address">Street address</label>
+                <input id="address" class="form-input" placeholder="12 Solar Street" [ngModel]="address()" (ngModelChange)="address.set($event)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="city">City / suburb</label>
+                <input id="city" class="form-input" placeholder="Centurion" [ngModel]="city()" (ngModelChange)="city.set($event)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="postcode">Postal code</label>
+                <input id="postcode" class="form-input" placeholder="0157" [ngModel]="postcode()" (ngModelChange)="postcode.set($event)" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="panel-count">Number of solar panels</label>
+                <div class="panel-stepper">
+                  <button type="button" class="stepper-btn" aria-label="Decrease panels" (click)="bumpPanels(-1)">−</button>
+                  <input
+                    id="panel-count"
+                    type="number"
+                    class="form-input panel-input"
+                    [ngModel]="panelCount()"
+                    (ngModelChange)="updatePanelCount(+$event)"
+                    [min]="minPanels"
+                    [max]="maxPanels"
+                    step="1"
+                    inputmode="numeric"
+                  />
+                  <button type="button" class="stepper-btn" aria-label="Increase panels" (click)="bumpPanels(1)">+</button>
+                  <span class="panel-unit">panels</span>
+                </div>
+                <span class="form-hint">{{ minPanels }}–{{ maxPanels | number }} panels per property</span>
+              </div>
+
+              <div class="form-group form-group-full">
+                <span class="form-label">Roof type</span>
+                <div class="chip-group" role="group" aria-label="Roof type">
+                  @for (type of roofTypes; track type) {
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.selected]="roofType() === type"
+                      (click)="selectRoofType(type)"
+                    >
+                      {{ type }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="form-group form-group-full">
+                <label class="form-label" for="access-notes">Access to roof</label>
+                <textarea
+                  id="access-notes"
+                  class="form-textarea"
+                  rows="3"
+                  placeholder="e.g. Side gate code 4521, ladder required, call on arrival…"
+                  [ngModel]="accessNotes()"
+                  (ngModelChange)="accessNotes.set($event)"
+                ></textarea>
+                <span class="form-hint">Gate codes, parking, pets, or anything our team should know.</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (step() === 3) {
+          <header class="step-header">
+            <div class="step-icon"><app-icon name="calendar" [size]="22" /></div>
+            <div>
+              <h2>Book your first visit</h2>
+              <p class="step-desc">Choose a preferred date and time window. We'll confirm by SMS or WhatsApp.</p>
+            </div>
+          </header>
+
+          <div class="date-layout">
+            <div class="step-panel card date-panel">
+              <label class="form-label" for="preferred-date">Preferred date</label>
+              <input
+                id="preferred-date"
+                type="date"
+                class="form-input date-input"
+                [min]="minDate"
+                [ngModel]="preferredDate()"
+                (ngModelChange)="preferredDate.set($event)"
+              />
+              <span class="form-hint">Earliest available: 3 days from today</span>
+            </div>
+
+            <div class="step-panel card time-panel">
+              <span class="form-label">Preferred time</span>
+              <div class="time-slots">
+                @for (slot of timeSlots; track slot.id) {
+                  <button
+                    type="button"
+                    class="time-slot"
+                    [class.selected]="preferredTimeSlot() === slot.id"
+                    (click)="preferredTimeSlot.set(slot.id)"
+                  >
+                    <strong>{{ slot.label }}</strong>
+                    <span>{{ slot.time }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (step() === 4) {
+          <header class="step-header">
+            <div class="step-icon"><app-icon name="profile" [size]="22" /></div>
+            <div>
+              <h2>Create your account</h2>
+              <p class="step-desc">Add your details, then continue with Google to finish setting up your portal.</p>
+            </div>
+          </header>
+
+          <div class="step-panel card">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="first-name">First name</label>
+                <input id="first-name" class="form-input" [ngModel]="firstName()" (ngModelChange)="firstName.set($event)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="last-name">Last name</label>
+                <input id="last-name" class="form-input" [ngModel]="lastName()" (ngModelChange)="lastName.set($event)" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone number</label>
+              <input id="phone" type="tel" class="form-input" placeholder="082 123 4567" [ngModel]="phone()" (ngModelChange)="phone.set($event)" />
+            </div>
+            <label class="terms-row">
+              <input type="checkbox" [ngModel]="acceptedTerms()" (ngModelChange)="acceptedTerms.set($event)" />
+              <span>I agree to the Terms of Service and privacy policy</span>
+            </label>
+            <p class="field-hint">Your account email will be the Google account you continue with below.</p>
+            @if (googleClientId()) {
+              <div class="google-signup-block">
+                <app-google-sign-in
+                  [clientId]="googleClientId()!"
+                  [disabled]="submitting() || !acceptedTerms()"
+                  (credential)="onGoogleSignup($event)"
+                />
+              </div>
+            } @else {
+              <p class="form-error">Google Sign-In is not configured. Contact Solanist support.</p>
+            }
+            @if (signupError()) {
+              <p class="form-error">{{ signupError() }}</p>
+            }
+          </div>
+        }
+
+        <footer class="step-footer">
+          @if (step() > 1) {
+            <button type="button" class="btn btn-secondary" (click)="back()">Back</button>
+          } @else {
+            <a routerLink="/login" class="btn btn-secondary">Have an account? Log in</a>
+          }
+          @if (step() === 1) {
+            <button type="button" class="btn btn-primary" [disabled]="!selectedPlanId()" (click)="nextFromPlan()">Continue</button>
+          }
+          @if (step() === 2) {
+            <button type="button" class="btn btn-primary" [disabled]="!address().trim() || !city().trim()" (click)="nextFromProperty()">Continue</button>
+          }
+          @if (step() === 3) {
+            <button type="button" class="btn btn-primary" [disabled]="!preferredDate() || !preferredTimeSlot()" (click)="nextFromDate()">Continue</button>
+          }
+        </footer>
+      </div>
+
+      <aside class="onboarding-aside" aria-label="Booking summary">
+        <div class="aside-card card">
+          <h3>Your signup</h3>
+          @if (address()) {
+            <div class="aside-property">
+              <app-icon name="map-pin" [size]="16" />
+              <span>{{ address() }}{{ city() ? ', ' + city() : '' }}</span>
+            </div>
+          } @else {
+            <p class="aside-muted">Add your property to see it here</p>
+          }
+
+          @if (selectedPlan; as plan) {
+            <div class="aside-plan">
+              <span class="aside-label">Selected plan</span>
+              <strong>{{ plan.name }}</strong>
+              <span class="aside-price">{{ plan.pricePerVisit | currency: 'ZAR':'symbol-narrow':'1.0-0' }} per clean</span>
+            </div>
+          } @else {
+            <p class="aside-muted">Select a plan to see pricing</p>
+          }
+
+          @if (step() >= 2) {
+            <div class="aside-detail">
+              <span class="aside-label">Panels</span>
+              <span>{{ panelCount() }} · {{ roofType() }}</span>
+            </div>
+          }
+
+          @if (step() >= 3 && preferredDate()) {
+            <div class="aside-detail">
+              <span class="aside-label">First visit</span>
+              <span>{{ preferredDate() | date: 'd MMM yyyy' }}{{ selectedTimeLabel ? ' · ' + selectedTimeLabel : '' }}</span>
+            </div>
+          }
+
+          <div class="aside-trust">
+            <app-icon name="shield" [size]="16" />
+            <span>Secure signup · No payment required today</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+}
