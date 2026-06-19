@@ -338,6 +338,35 @@
   color: var(--color-text-muted);
 }
 
+// Buttons + helper text projected into the reports empty state.
+.empty-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--spacing-md);
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .seed-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    max-width: 360px;
+    text-align: center;
+  }
+
+  .seed-error {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-error, #dc2626);
+  }
+}
+
 .reports-sidebar {
   display: flex;
   flex-direction: column;

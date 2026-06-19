@@ -107,7 +107,41 @@
         </div>
 
         @if (!filteredReports().length) {
-          <app-empty-state iconName="report" title="No reports found" message="Try adjusting your filters." />
+          @if (hasNoReports() && !filtersActive()) {
+            <app-empty-state
+              iconName="report"
+              title="No reports yet"
+              message="Once your first cleaning visit is completed, your full report — with before/after photos, technician notes and performance data — will appear here."
+            >
+              <div class="empty-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  [disabled]="seeding() || !properties().length"
+                  (click)="seedAllDemo()"
+                >
+                  <app-icon name="plus" [size]="14" />
+                  {{ seeding() ? 'Adding sample reports…' : 'Add sample report data' }}
+                </button>
+                @if (seedError(); as err) {
+                  <p class="seed-error">{{ err }}</p>
+                }
+                <p class="seed-hint">
+                  Adds 2–3 demo reports per property so you can preview how the report list looks.
+                </p>
+              </div>
+            </app-empty-state>
+          } @else {
+            <app-empty-state
+              iconName="report"
+              title="No reports match your filters"
+              message="Try adjusting the property, date range or search."
+            >
+              <button type="button" class="btn btn-outline btn-sm" (click)="clearFilters()">
+                Clear filters
+              </button>
+            </app-empty-state>
+          }
         } @else {
           <div class="reports-table card">
             <div class="table-head">

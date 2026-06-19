@@ -2,6 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ClientService } from '../../../core/services/client.service';
 import { CleaningReport, PropertySummary } from '../../../core/models/client.models';
 import { REPORT_INCLUDES_SIDEBAR } from '../../../core/content/client-content';
@@ -37,11 +39,24 @@ export class ClientReportsComponent implements OnInit {
   allReports = signal<CleaningReport[]>([]);
   properties = signal<PropertySummary[]>([]);
   loading = signal(true);
+  seeding = signal(false);
+  seedError = signal<string | null>(null);
 
   propertyFilter = signal('all');
   dateFilter = signal<DateFilter>('all');
   searchQuery = signal('');
   currentPage = signal(1);
+
+  // True when the user has zero reports overall (vs. zero matching the
+  // current filters). Drives the empty-state copy + seeding CTA.
+  hasNoReports = computed(() => this.allReports().length === 0);
+
+  filtersActive = computed(
+    () =>
+      this.propertyFilter() !== 'all' ||
+      this.dateFilter() !== 'all' ||
+      this.searchQuery().trim().length > 0,
+  );
 
   filteredReports = computed(() => {
     let list = [...this.allReports()];
@@ -145,5 +160,40 @@ export class ClientReportsComponent implements OnInit {
     const end = Math.min(total, start + 4);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
+  }
+
+  // Seeds demo cleaning history (3 bookings + 2 reports) for every property
+  // the user owns and reloads the reports list. Idempotent on the backend so
+  // running it twice won't double-up the data.
+  seedAllDemo(): void {
+    const props = this.properties();
+    if (!props.length || this.seeding()) return;
+    this.seeding.set(true);
+    this.seedError.set(null);
+
+    const calls = props.map((p) =>
+      this.clientService.seedDemoCleanings(p.id).pipe(catchError(() => of(null))),
+    );
+
+    forkJoin(calls).subscribe({
+      next: () => this.reloadReports(),
+      error: () => {
+        this.seeding.set(false);
+        this.seedError.set('Could not add sample report data. Please try again.');
+      },
+    });
+  }
+
+  private reloadReports(): void {
+    this.clientService.getReports().subscribe({
+      next: (data) => {
+        this.allReports.set(data);
+        this.seeding.set(false);
+      },
+      error: () => {
+        this.seeding.set(false);
+        this.seedError.set('Sample data added but the list could not be refreshed.');
+      },
+    });
   }
 }
