@@ -55,6 +55,30 @@
   display: flex;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
+
+  // Photo backgrounds are unpredictable, so override the muted/tinted badge
+  // backgrounds with solid high-contrast colors and a soft shadow for legibility.
+  .badge {
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(2px);
+  }
+
+  .badge-success {
+    background: var(--color-success);
+    color: #ffffff;
+  }
+
+  .badge-warning {
+    background: #f59e0b;
+    color: #1f2937;
+  }
+
+  .badge-primary-star {
+    background: #1f2937;
+    color: #ffffff;
+  }
 }
 
 .hero-body {
