@@ -40,6 +40,17 @@ export class LoginComponent implements OnInit {
   googleClientId = signal<string | null>(null);
   googleOnly = signal(false);
   allowSelfSignup = signal(false);
+  activeStep = signal(0);
+
+  setStep(idx: number): void {
+    this.activeStep.set(((idx % 3) + 3) % 3);
+  }
+  nextStep(): void {
+    this.setStep(this.activeStep() + 1);
+  }
+  prevStep(): void {
+    this.setStep(this.activeStep() - 1);
+  }
 
   ngOnInit(): void {
     const user = this.auth.user();

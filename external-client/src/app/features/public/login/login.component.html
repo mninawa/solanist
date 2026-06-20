@@ -1,17 +1,16 @@
 <div class="landing-layout">
   <!-- =============== Marketing hero =============== -->
   <aside class="hero" aria-label="Solanist marketing">
-    <div class="hero-art" aria-hidden="true"></div>
-
     <header class="hero-header">
       <app-logo variant="light" size="md" />
     </header>
 
-    <section class="hero-content">
+    <section class="hero-body">
+      <!-- Left: headline + copy -->
       <div class="hero-text-block">
         <span class="hero-pill">
           <app-icon name="star" [size]="14" />
-          Solar care. Simplified.
+          Solar care, simplified
         </span>
 
         <h1 class="hero-title">
@@ -23,118 +22,179 @@
           Scheduled cleans, WhatsApp reminders, and before &amp; after photo
           reports — so your panels always perform at their best.
         </p>
+      </div>
 
-        <div class="features-grid">
-          <div class="feature">
-            <div class="feature-icon">
-              <app-icon name="calendar" [size]="20" />
-            </div>
-            <div>
-              <strong>Scheduled cleans</strong>
-              <p>Set your frequency and we'll handle the rest.</p>
-            </div>
-          </div>
+      <!-- Right: rooftop photograph + floating price bubble -->
+      <figure class="hero-photo">
+        <img
+          src="https://images.unsplash.com/photo-1655300256335-beef51a914fe?w=900&h=720&fit=crop"
+          alt="Modern house with solar panels at golden hour"
+          loading="eager"
+          referrerpolicy="no-referrer"
+        />
+        <aside class="price-bubble" aria-label="Pricing">
+          <small>From</small>
+          <strong>R399</strong>
+          <span>per clean</span>
+          <em>Cancel anytime</em>
+        </aside>
+      </figure>
+    </section>
 
-          <div class="feature">
-            <div class="feature-icon">
-              <app-icon name="chat" [size]="20" />
-            </div>
-            <div>
-              <strong>WhatsApp reminders</strong>
-              <p>We'll remind you before every scheduled clean.</p>
-            </div>
-          </div>
-
-          <div class="feature">
-            <div class="feature-icon">
-              <app-icon name="camera" [size]="20" />
-            </div>
-            <div>
-              <strong>Before &amp; after reports</strong>
-              <p>Get photo proof and kWh gains after every clean.</p>
-            </div>
-          </div>
-
-          <div class="feature">
-            <div class="feature-icon">
-              <app-icon name="shield" [size]="20" />
-            </div>
-            <div>
-              <strong>Reliable &amp; insured</strong>
-              <p>Trusted professionals. Insured for your peace of mind.</p>
-            </div>
-          </div>
+    <!-- 4 feature tiles in a single row, spanning hero width -->
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-icon">
+          <app-icon name="calendar" [size]="20" />
+        </div>
+        <div>
+          <strong>Scheduled cleans</strong>
+          <p>Set your frequency and we'll handle the rest.</p>
         </div>
       </div>
 
-      <aside class="price-bubble" aria-label="Pricing">
-        <small>From</small>
-        <strong>R399</strong>
-        <span>per clean</span>
-        <em>Cancel anytime</em>
-      </aside>
-    </section>
+      <div class="feature">
+        <div class="feature-icon">
+          <app-icon name="chat" [size]="20" />
+        </div>
+        <div>
+          <strong>WhatsApp reminders</strong>
+          <p>We'll remind you before every scheduled clean.</p>
+        </div>
+      </div>
 
+      <div class="feature">
+        <div class="feature-icon">
+          <app-icon name="camera" [size]="20" />
+        </div>
+        <div>
+          <strong>Before &amp; after reports</strong>
+          <p>Get photo proof and kWh gains after every clean.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">
+          <app-icon name="shield" [size]="20" />
+        </div>
+        <div>
+          <strong>Reliable &amp; insured</strong>
+          <p>Trusted professionals. Insured for your peace of mind.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- "See how Solanist works" carousel -->
     <section class="how" aria-label="How Solanist works">
       <h3>See how Solanist works</h3>
-      <div class="how-steps">
-        <article class="how-step step-1">
-          <div class="how-step-art" aria-hidden="true">
-            <div class="art-card art-card-schedule">
-              <div class="art-row art-row-strong"></div>
-              <div class="art-row"></div>
-              <div class="art-grid-7">
-                <span></span><span></span><span></span><span class="active"></span>
-                <span></span><span></span><span></span>
+
+      <div class="how-track">
+        <button
+          type="button"
+          class="how-arrow how-arrow-prev"
+          aria-label="Previous"
+          (click)="prevStep()"
+        >
+          <app-icon name="chevron-right" [size]="16" />
+        </button>
+
+        <div class="how-steps">
+          <article class="how-step step-1" [class.active]="activeStep() === 0">
+            <div class="how-step-art" aria-hidden="true">
+              <div class="phone">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                  <div class="phone-greeting">
+                    <span class="phone-hello">Good morning, Alex</span>
+                    <span class="phone-avatar"></span>
+                  </div>
+                  <div class="phone-card">
+                    <span class="phone-label">Next clean</span>
+                    <strong class="phone-date">24 May 2025</strong>
+                    <span class="phone-eta">8 days to go</span>
+                    <span class="phone-cta">View details</span>
+                  </div>
+                  <div class="phone-bar"></div>
+                </div>
               </div>
-              <div class="art-pill">Sat 22 Jun · 09:00</div>
             </div>
-          </div>
-          <span class="how-step-num">1</span>
-          <strong>Easy scheduling</strong>
-          <p>Choose your plan and preferred cleaning frequency.</p>
-        </article>
+            <span class="how-step-num">1</span>
+            <strong>Easy scheduling</strong>
+            <p>Choose your plan and preferred cleaning frequency.</p>
+          </article>
 
-        <article class="how-step step-2">
-          <div class="how-step-art" aria-hidden="true">
-            <div class="art-panels">
-              <span class="panel"></span>
-              <span class="panel"></span>
-              <span class="panel"></span>
-              <span class="panel"></span>
-              <span class="art-bubble"></span>
+          <article class="how-step step-2" [class.active]="activeStep() === 1">
+            <div class="how-step-art" aria-hidden="true">
+              <img
+                src="https://images.unsplash.com/photo-1754619880959-2b0528375883?w=520&h=320&fit=crop"
+                alt=""
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
             </div>
-          </div>
-          <span class="how-step-num">2</span>
-          <strong>Professional cleaning</strong>
-          <p>Our experts arrive on time and clean with care.</p>
-        </article>
+            <span class="how-step-num">2</span>
+            <strong>Professional cleaning</strong>
+            <p>Our experts arrive on time and clean with care.</p>
+          </article>
 
-        <article class="how-step step-3">
-          <div class="how-step-art" aria-hidden="true">
-            <div class="art-photos">
-              <div class="art-photo art-photo-before"></div>
-              <div class="art-photo art-photo-after"></div>
+          <article class="how-step step-3" [class.active]="activeStep() === 2">
+            <div class="how-step-art" aria-hidden="true">
+              <div class="report">
+                <div class="report-head">
+                  <strong>Clean report</strong>
+                  <span>24 May 2025 · Site: 12 Oak Street, JHB</span>
+                </div>
+                <div class="report-photos">
+                  <div class="report-photo report-photo-before">
+                    <span>Before</span>
+                  </div>
+                  <div class="report-photo report-photo-after">
+                    <span>After</span>
+                  </div>
+                </div>
+                <div class="report-stat">
+                  <span class="report-stat-label">Estimated kWh gains</span>
+                  <strong class="report-stat-value">+18.6 kWh</strong>
+                </div>
+              </div>
             </div>
-            <div class="art-stat">
-              <strong>+18.6 kWh</strong>
-              <span class="art-bar"><span></span></span>
-            </div>
-          </div>
-          <span class="how-step-num">3</span>
-          <strong>Proof &amp; performance</strong>
-          <p>Get before &amp; after photos and your estimated kWh gains.</p>
-        </article>
+            <span class="how-step-num">3</span>
+            <strong>Proof &amp; performance</strong>
+            <p>Get before &amp; after photos and your estimated kWh gains.</p>
+          </article>
+        </div>
+
+        <button
+          type="button"
+          class="how-arrow how-arrow-next"
+          aria-label="Next"
+          (click)="nextStep()"
+        >
+          <app-icon name="chevron-right" [size]="16" />
+        </button>
+      </div>
+
+      <div class="how-dots" role="tablist">
+        @for (dot of [0, 1, 2]; track dot) {
+          <button
+            type="button"
+            class="how-dot"
+            [class.active]="activeStep() === dot"
+            (click)="setStep(dot)"
+            [attr.aria-label]="'Step ' + (dot + 1)"
+          ></button>
+        }
       </div>
     </section>
 
+    <!-- Waitlist strip -->
     <section class="waitlist-strip" aria-label="Waitlist">
       <span class="ws-icon" aria-hidden="true">
         <app-icon name="users" [size]="18" />
       </span>
       <div>
         <strong>Be the first to experience effortless solar care.</strong>
-        <p>Join the waitlist and get early access.</p>
+        <p>Join early access and enjoy priority scheduling and exclusive perks.</p>
       </div>
       <a class="ws-btn" [href]="WAITLIST_MAILTO">
         Join the waitlist
