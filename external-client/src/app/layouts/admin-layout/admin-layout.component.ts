@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, OnInit, ViewChild, inject, signal 
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AppIconComponent, AppIconName } from '../../shared/components/app-icon/app-icon.component';
+import { AppLogoComponent } from '../../shared/components/app-logo/app-logo.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { AdminService } from '../../core/services/admin.service';
 import { AdminSearchHit } from '../../core/models/admin.models';
@@ -17,7 +18,7 @@ interface NavLink {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AppIconComponent, FormsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AppIconComponent, AppLogoComponent, FormsModule],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.scss',
 })

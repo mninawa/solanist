@@ -1,18 +1,21 @@
+// Subtle Solanist mark used as a page-level watermark on light auth and
+// public surfaces. The class name is preserved for backwards compatibility
+// with existing markup; the asset just points at the new brand icon.
 .felidaen-watermark {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url('/assets/felidaen-watermark.png');
+  background-image: url('/assets/brand/solanist-icon.png');
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: min(72vw, 560px) auto;
-  opacity: 0.09;
+  background-size: min(60vw, 480px) auto;
+  opacity: 0.05;
   mix-blend-mode: multiply;
 }
 
 .app-shell:has(.admin-app-shell) .felidaen-watermark {
-  opacity: 0.06;
+  opacity: 0.04;
   mix-blend-mode: soft-light;
   filter: brightness(1.15);
 }

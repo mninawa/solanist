@@ -54,6 +54,12 @@
   text-decoration: none;
   color: var(--admin-text);
 
+  // The brand component renders the official Solanist lockup; sidebar
+  // only needs to size it.
+  app-logo {
+    height: 32px;
+  }
+
   .brand-icon {
     width: 32px;
     height: 32px;

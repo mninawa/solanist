@@ -1,13 +1,17 @@
 :root {
-  /* Solanist — electric blue dashboard aesthetic */
-  --color-brand: #2563eb;
-  --color-brand-light: #3b82f6;
-  --color-brand-dark: #1d4ed8;
+  /* Solanist brand palette — Royal Blue / Charcoal / Steel Gray / White */
+  --color-brand: #1e40ff;
+  --color-brand-light: #4a66ff;
+  --color-brand-dark: #1633cc;
 
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
-  --color-accent-muted: rgba(37, 99, 235, 0.1);
-  --color-accent-light: #eff6ff;
+  --color-accent: #1e40ff;
+  --color-accent-hover: #1633cc;
+  --color-accent-muted: rgba(30, 64, 255, 0.1);
+  --color-accent-light: #eef0ff;
+
+  /* Brand neutrals */
+  --color-charcoal: #0f1115;
+  --color-steel-gray: #2a2e35;
 
   --color-orange: #f97316;
   --color-orange-muted: rgba(249, 115, 22, 0.12);
@@ -32,15 +36,15 @@
   --color-text-muted: #9ca3af;
   --color-text-inverse: #ffffff;
   --color-text-sidebar: #6b7280;
-  --color-text-sidebar-active: #2563eb;
+  --color-text-sidebar-active: var(--color-accent);
 
   --color-success: #10b981;
   --color-success-muted: rgba(16, 185, 129, 0.12);
   --color-warning: #f59e0b;
   --color-warning-muted: rgba(245, 158, 11, 0.12);
   --color-error: #ef4444;
-  --color-info: #2563eb;
-  --color-info-muted: rgba(37, 99, 235, 0.12);
+  --color-info: var(--color-accent);
+  --color-info-muted: var(--color-accent-muted);
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 

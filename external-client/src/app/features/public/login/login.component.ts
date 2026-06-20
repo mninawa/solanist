@@ -23,7 +23,7 @@ import { UserRole } from '../../../core/models/common.models';
         </div>
 
         <div class="hero-top">
-          <app-logo variant="light" [showTagline]="true" />
+          <app-logo variant="light" size="lg" />
         </div>
 
         <div class="hero-body">
@@ -42,7 +42,6 @@ import { UserRole } from '../../../core/models/common.models';
         </div>
 
         <div class="hero-footer">
-          <img class="hero-watermark" src="/assets/felidaen-watermark.png" alt="Felidaen" />
           <span class="hero-footer-label">Powered by Felidaen</span>
         </div>
       </aside>
@@ -279,11 +278,11 @@ import { UserRole } from '../../../core/models/common.models';
       inset: 0;
       z-index: 0;
       pointer-events: none;
-      background-image: url('/assets/felidaen-watermark.png');
+      background-image: url('/assets/brand/solanist-icon.png');
       background-repeat: no-repeat;
       background-position: center center;
-      background-size: min(70%, 440px) auto;
-      opacity: 0.07;
+      background-size: min(60%, 360px) auto;
+      opacity: 0.05;
       mix-blend-mode: multiply;
     }
     .auth-card {
