@@ -10,10 +10,14 @@
 
 .landing-layout {
   display: grid;
-  grid-template-columns: 1.45fr 1fr;
+  grid-template-columns: 1.15fr 1fr;
   min-height: 100vh;
   min-height: 100dvh;
   background: transparent;
+}
+
+@media (min-width: 1500px) {
+  .landing-layout { grid-template-columns: 1.3fr 1fr; }
 }
 
 /* ===================== HERO ===================== */
@@ -33,48 +37,23 @@
     linear-gradient(140deg, #1633cc 0%, #1e40ff 55%, #4a66ff 100%);
 }
 
-/* Decorative solar-panel artwork (right of headline) */
+/* Decorative gradient blob — sits behind the price bubble area to give the
+   right side of the hero a soft focal point without competing with the
+   bubble or feature tiles. */
 .hero-art {
   position: absolute;
-  top: clamp(var(--spacing-xl), 12vh, 12rem);
-  right: clamp(-3rem, -3vw, -1rem);
-  width: clamp(280px, 38%, 460px);
-  height: clamp(220px, 30vw, 360px);
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18), transparent 70%);
+  top: clamp(var(--spacing-xl), 10vh, 10rem);
+  right: -8%;
+  width: clamp(320px, 44%, 520px);
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 12% 18% 22% 8%;
-    border-radius: 12px;
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
-      repeating-linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.18) 0,
-        rgba(255, 255, 255, 0.18) 2px,
-        transparent 2px,
-        transparent 26px
-      ),
-      repeating-linear-gradient(
-        45deg,
-        rgba(255, 255, 255, 0.18) 0,
-        rgba(255, 255, 255, 0.18) 2px,
-        transparent 2px,
-        transparent 26px
-      );
-    transform: perspective(900px) rotateX(58deg) rotateZ(-6deg);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-  }
-  &::after {
-    inset: 30% 6% 8% 22%;
-    opacity: 0.7;
-    transform: perspective(900px) rotateX(58deg) rotateZ(-6deg) translateY(40px);
-  }
+  opacity: 0.7;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.55), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgba(74, 102, 255, 0.65), transparent 60%);
+  filter: blur(2px);
 }
 
 /* Top bar */
@@ -191,22 +170,35 @@
 
 /* Floating price bubble */
 .price-bubble {
+  position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
-  width: 168px;
-  height: 168px;
+  width: 184px;
+  height: 184px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(10px);
   text-align: center;
   padding: 16px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 20px 50px rgba(8, 22, 92, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 
-  small { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
-  strong { font-size: 1.875rem; font-weight: 800; line-height: 1; color: #ffffff; }
-  span   { font-size: 0.8125rem; color: rgba(255, 255, 255, 0.82); margin-top: 2px; }
-  em     { font-style: normal; font-size: 0.6875rem; color: rgba(255, 255, 255, 0.6); margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.18); width: 80%; }
+  small { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.85); margin-bottom: 4px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  strong { font-size: 2rem; font-weight: 800; line-height: 1; color: #ffffff; letter-spacing: -0.02em; }
+  span   { font-size: 0.875rem; color: rgba(255, 255, 255, 0.88); margin-top: 4px; }
+  em     {
+    font-style: normal;
+    font-size: 0.6875rem;
+    color: rgba(255, 255, 255, 0.72);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    width: 78%;
+    letter-spacing: 0.02em;
+  }
 }
 
 /* "See how Solanist works" */
@@ -335,12 +327,16 @@
 /* ===================== AUTH SIDE ===================== */
 
 .auth-side {
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl) var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-xl);
   background: var(--color-bg-primary);
 }
 
