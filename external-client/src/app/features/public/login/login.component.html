@@ -1,0 +1,220 @@
+<div class="landing-layout">
+  <!-- =============== Marketing hero =============== -->
+  <aside class="hero" aria-label="Solanist marketing">
+    <div class="hero-art" aria-hidden="true"></div>
+
+    <header class="hero-header">
+      <app-logo variant="light" size="md" />
+    </header>
+
+    <section class="hero-content">
+      <div class="hero-text-block">
+        <span class="hero-pill">
+          <app-icon name="star" [size]="14" />
+          Solar care. Simplified.
+        </span>
+
+        <h1 class="hero-title">
+          Solar panel cleaning
+          <span class="accent">on subscription.</span>
+        </h1>
+
+        <p class="hero-subtext">
+          Scheduled cleans, WhatsApp reminders, and before &amp; after photo
+          reports — so your panels always perform at their best.
+        </p>
+
+        <div class="features-grid">
+          <div class="feature">
+            <div class="feature-icon">
+              <app-icon name="calendar" [size]="20" />
+            </div>
+            <div>
+              <strong>Scheduled cleans</strong>
+              <p>Set your frequency and we'll handle the rest.</p>
+            </div>
+          </div>
+
+          <div class="feature">
+            <div class="feature-icon">
+              <app-icon name="chat" [size]="20" />
+            </div>
+            <div>
+              <strong>WhatsApp reminders</strong>
+              <p>We'll remind you before every scheduled clean.</p>
+            </div>
+          </div>
+
+          <div class="feature">
+            <div class="feature-icon">
+              <app-icon name="camera" [size]="20" />
+            </div>
+            <div>
+              <strong>Before &amp; after reports</strong>
+              <p>Get photo proof and kWh gains after every clean.</p>
+            </div>
+          </div>
+
+          <div class="feature">
+            <div class="feature-icon">
+              <app-icon name="shield" [size]="20" />
+            </div>
+            <div>
+              <strong>Reliable &amp; insured</strong>
+              <p>Trusted professionals. Insured for your peace of mind.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="price-bubble" aria-label="Pricing">
+        <small>From</small>
+        <strong>R399</strong>
+        <span>per clean</span>
+        <em>Cancel anytime</em>
+      </aside>
+    </section>
+
+    <section class="how" aria-label="How Solanist works">
+      <h3>See how Solanist works</h3>
+      <div class="how-steps">
+        <article class="how-step step-1">
+          <div class="how-step-art" aria-hidden="true"></div>
+          <span class="how-step-num">1</span>
+          <strong>Easy scheduling</strong>
+          <p>Choose your plan and preferred cleaning frequency.</p>
+        </article>
+
+        <article class="how-step step-2">
+          <div class="how-step-art" aria-hidden="true"></div>
+          <span class="how-step-num">2</span>
+          <strong>Professional cleaning</strong>
+          <p>Our experts arrive on time and clean with care.</p>
+        </article>
+
+        <article class="how-step step-3">
+          <div class="how-step-art" aria-hidden="true"></div>
+          <span class="how-step-num">3</span>
+          <strong>Proof &amp; performance</strong>
+          <p>Get before &amp; after photos and your estimated kWh gains.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="waitlist-strip" aria-label="Waitlist">
+      <span class="ws-icon" aria-hidden="true">
+        <app-icon name="users" [size]="18" />
+      </span>
+      <div>
+        <strong>Be the first to experience effortless solar care.</strong>
+        <p>Join the waitlist and get early access.</p>
+      </div>
+      <a class="ws-btn" [href]="WAITLIST_MAILTO">
+        Join the waitlist
+        <app-icon name="chevron-right" [size]="14" />
+      </a>
+    </section>
+  </aside>
+
+  <!-- =============== Auth panel =============== -->
+  <main class="auth-side">
+    <article class="auth-card">
+      <div class="card-brand">
+        <img src="/assets/brand/solanist-icon.png" alt="" />
+        <span>Solanist</span>
+      </div>
+
+      <h2>Welcome back</h2>
+      <p class="card-sub">Sign in to manage your solar care.</p>
+
+      @if (loadingConfig()) {
+        <p class="text-sm text-muted center">Loading…</p>
+      } @else {
+        @if (!googleOnly()) {
+          <form (ngSubmit)="onDemoSubmit()">
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                class="form-input"
+                [(ngModel)]="email"
+                name="email"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                class="form-input"
+                [(ngModel)]="password"
+                name="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="submitting()">
+              {{ submitting() ? 'Signing in…' : 'Sign in' }}
+            </button>
+          </form>
+        }
+
+        @if (googleClientId()) {
+          @if (!googleOnly()) {
+            <div class="or-divider"><span>or</span></div>
+          }
+          <div class="google-wrap">
+            <app-google-sign-in
+              [clientId]="googleClientId()!"
+              [disabled]="submitting()"
+              (credential)="onGoogleCredential($event)"
+              (loadError)="error.set($event)"
+            />
+          </div>
+        } @else if (!APP_CONFIG.mockMode && googleOnly()) {
+          <p class="form-error">Google Sign-In is not configured. Contact support.</p>
+        }
+      }
+
+      @if (error()) {
+        <div class="form-error" [class.with-action]="errorCode() === 'account_not_found'">
+          <p>{{ error() }}</p>
+          @if (errorCode() === 'account_not_found') {
+            <a class="error-action" [href]="'mailto:' + SUPPORT_EMAIL">Request access</a>
+          }
+        </div>
+      }
+
+      <div class="new-customer">
+        <p class="new-customer-title">New to Solanist?</p>
+        @if (allowSelfSignup()) {
+          <p class="new-customer-text">
+            Create your account, choose a plan, and book your first clean in minutes.
+          </p>
+          <a class="btn btn-primary btn-block" routerLink="/signup">Create an account</a>
+        } @else {
+          <p class="new-customer-text">
+            Accounts are created from a personal invite. Use the link your Solanist contact sent
+            you, or reach out and we'll get you set up.
+          </p>
+          <a class="new-customer-link" [href]="'mailto:' + SUPPORT_EMAIL">Request access</a>
+        }
+      </div>
+
+      <p class="trust-note">
+        <span class="lock">🔒</span> Protected with encrypted Google sign-in
+      </p>
+
+      <p class="legal-row">
+        <a routerLink="/legal/terms">Terms of Service</a>
+        <span aria-hidden="true">·</span>
+        <a routerLink="/legal/privacy">Privacy Policy</a>
+        <span aria-hidden="true">·</span>
+        <a routerLink="/legal">All policies</a>
+      </p>
+    </article>
+  </main>
+</div>

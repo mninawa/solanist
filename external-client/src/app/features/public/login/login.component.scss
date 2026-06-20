@@ -1,0 +1,517 @@
+/* Solanist landing page
+   ----------------------
+   Two-column layout: marketing hero on the left, sign-in card on the right.
+   The hero is hidden on small screens so the auth panel takes the full width.
+*/
+
+:host {
+  display: block;
+}
+
+.landing-layout {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
+}
+
+/* ===================== HERO ===================== */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+  padding: clamp(var(--spacing-lg), 3vw, var(--spacing-2xl));
+  color: #ffffff;
+
+  background:
+    radial-gradient(circle at 95% 25%, rgba(255, 255, 255, 0.18), transparent 38%),
+    radial-gradient(circle at 8% 100%, rgba(74, 102, 255, 0.55), transparent 45%),
+    linear-gradient(140deg, #1633cc 0%, #1e40ff 55%, #4a66ff 100%);
+}
+
+/* Decorative solar-panel artwork (right of headline) */
+.hero-art {
+  position: absolute;
+  top: clamp(var(--spacing-xl), 12vh, 12rem);
+  right: clamp(-3rem, -3vw, -1rem);
+  width: clamp(280px, 38%, 460px);
+  height: clamp(220px, 30vw, 360px);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 12% 18% 22% 8%;
+    border-radius: 12px;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
+      repeating-linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.18) 0,
+        rgba(255, 255, 255, 0.18) 2px,
+        transparent 2px,
+        transparent 26px
+      ),
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.18) 0,
+        rgba(255, 255, 255, 0.18) 2px,
+        transparent 2px,
+        transparent 26px
+      );
+    transform: perspective(900px) rotateX(58deg) rotateZ(-6deg);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+  }
+  &::after {
+    inset: 30% 6% 8% 22%;
+    opacity: 0.7;
+    transform: perspective(900px) rotateX(58deg) rotateZ(-6deg) translateY(40px);
+  }
+}
+
+/* Top bar */
+.hero-header {
+  position: relative;
+  z-index: 2;
+}
+
+/* Body content (pill, headline, features, price bubble) */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--spacing-lg);
+  align-items: start;
+}
+
+.hero-content > .hero-text-block { grid-column: 1 / 2; }
+.hero-content > .price-bubble    { grid-column: 2 / 3; justify-self: end; align-self: start; }
+
+@media (max-width: 1100px) {
+  .hero-content { grid-template-columns: 1fr; }
+  .hero-content > .price-bubble { justify-self: start; }
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: var(--spacing-md);
+  backdrop-filter: blur(6px);
+
+  app-icon { color: #fff; }
+}
+
+.hero-title {
+  font-size: clamp(2rem, 4.6vw, 3rem);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--spacing-md);
+  color: #ffffff;
+
+  .accent {
+    color: #93c5fd;
+    display: inline-block;
+  }
+}
+
+.hero-subtext {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 520px;
+  margin: 0 0 var(--spacing-xl);
+}
+
+/* 2×2 feature tiles */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  max-width: 560px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(6px);
+
+  .feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.9375rem;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.78);
+  }
+}
+
+/* Floating price bubble */
+.price-bubble {
+  display: grid;
+  place-items: center;
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(6px);
+  text-align: center;
+  padding: 16px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+
+  small { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+  strong { font-size: 1.875rem; font-weight: 800; line-height: 1; color: #ffffff; }
+  span   { font-size: 0.8125rem; color: rgba(255, 255, 255, 0.82); margin-top: 2px; }
+  em     { font-style: normal; font-size: 0.6875rem; color: rgba(255, 255, 255, 0.6); margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.18); width: 80%; }
+}
+
+/* "See how Solanist works" */
+.how {
+  position: relative;
+  z-index: 1;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 var(--spacing-md);
+  }
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-md);
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.how-step {
+  position: relative;
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .how-step-art {
+    height: 100px;
+    border-radius: var(--radius-sm);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
+      var(--art-color, rgba(147, 197, 253, 0.4));
+    margin-bottom: 4px;
+  }
+
+  &.step-1 .how-step-art { --art-color: rgba(147, 197, 253, 0.4); }
+  &.step-2 .how-step-art { --art-color: rgba(74, 102, 255, 0.4); }
+  &.step-3 .how-step-art { --art-color: rgba(96, 165, 250, 0.4); }
+
+  .how-step-num {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.9375rem;
+    color: #ffffff;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.78);
+  }
+}
+
+/* Waitlist strip */
+.waitlist-strip {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(6px);
+
+  .ws-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+
+  strong { display: block; color: #ffffff; font-size: 0.9375rem; }
+  p { margin: 0; color: rgba(255, 255, 255, 0.72); font-size: 0.8125rem; }
+
+  .ws-btn {
+    background: #ffffff;
+    color: var(--color-accent);
+    border-radius: var(--radius-full);
+    padding: 10px 18px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.15s ease;
+    white-space: nowrap;
+
+    &:hover { transform: translateY(-1px); }
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: auto 1fr;
+
+    .ws-btn { grid-column: 1 / -1; justify-content: center; }
+  }
+}
+
+/* ===================== AUTH SIDE ===================== */
+
+.auth-side {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  background: var(--color-bg-primary);
+}
+
+.auth-side::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/assets/brand/solanist-icon.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: min(60%, 360px) auto;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: clamp(var(--spacing-lg), 3vw, var(--spacing-2xl));
+}
+
+.card-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--spacing-lg);
+
+  img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+
+  span {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: -0.01em;
+  }
+}
+
+.auth-card h2 {
+  font-size: 1.5rem;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.card-sub {
+  margin: 0 0 var(--spacing-lg);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.google-wrap { display: flex; justify-content: center; }
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: var(--spacing-lg) 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+  }
+}
+
+.form-error {
+  margin-top: var(--spacing-md);
+  color: var(--color-error);
+  font-size: 0.875rem;
+
+  p { margin: 0; }
+
+  &.with-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+.error-action {
+  font-weight: 600;
+  color: var(--color-error);
+  text-decoration: underline;
+}
+
+.new-customer {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+
+  .new-customer-title {
+    margin: 0 0 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .new-customer-text {
+    margin: 0 0 var(--spacing-sm);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+
+  .new-customer-link {
+    display: inline-block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+}
+
+.trust-note {
+  margin: var(--spacing-md) 0 0;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+
+  .lock { margin-right: 4px; }
+}
+
+.legal-row {
+  margin: 6px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+
+  a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-accent);
+      text-decoration: underline;
+    }
+  }
+}
+
+/* ===================== Responsive ===================== */
+
+@media (max-width: 1024px) {
+  .landing-layout { grid-template-columns: 1fr; }
+  .hero { display: none; }
+  .auth-side { padding: var(--spacing-xl) var(--spacing-md); }
+}
