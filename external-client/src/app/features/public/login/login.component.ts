@@ -40,10 +40,13 @@ export class LoginComponent implements OnInit {
   googleClientId = signal<string | null>(null);
   googleOnly = signal(false);
   allowSelfSignup = signal(false);
+  readonly totalSteps = 4;
   activeStep = signal(0);
+  readonly dotIndices = [0, 1, 2, 3];
 
   setStep(idx: number): void {
-    this.activeStep.set(((idx % 3) + 3) % 3);
+    const t = this.totalSteps;
+    this.activeStep.set(((idx % t) + t) % t);
   }
   nextStep(): void {
     this.setStep(this.activeStep() + 1);
