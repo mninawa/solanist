@@ -39,13 +39,15 @@
   z-index: 2;
 }
 
-/* Two-column body: text-block (left) + photograph (right) */
+/* Two-column body: text-block (left) + photograph (right).
+   The text column gets more space so the title renders on exactly two
+   lines without mid-word wrapping at common desktop widths. */
 .hero-body {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: var(--spacing-xl);
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: clamp(var(--spacing-md), 2vw, var(--spacing-xl));
   align-items: stretch;
 }
 
@@ -57,6 +59,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding-right: var(--spacing-sm);
 }
 
 .hero-pill {
@@ -78,17 +81,23 @@
 }
 
 .hero-title {
-  font-size: clamp(2rem, 4.6vw, 3.25rem);
-  line-height: 1.04;
+  /* Sized so "Solar panel cleaning" fits on a single line at the
+     narrow text column we use on tablet (~1024–1280px). */
+  font-size: clamp(1.625rem, 3vw, 2.75rem);
+  line-height: 1.06;
   font-weight: 800;
   letter-spacing: -0.025em;
   margin: 0 0 var(--spacing-md);
   color: #ffffff;
+  text-wrap: balance;
+  white-space: normal;
 
   .accent {
     color: #93c5fd;
     display: inline;
   }
+
+  br { display: block; }
 }
 
 .hero-subtext {
@@ -103,87 +112,72 @@
 .hero-photo {
   position: relative;
   margin: 0;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  min-height: 260px;
-  box-shadow: 0 30px 60px rgba(8, 22, 92, 0.35);
+  min-height: 280px;
+  align-self: stretch;
 
   img {
     width: 100%;
     height: 100%;
-    min-height: 260px;
+    min-height: 280px;
     object-fit: cover;
     display: block;
   }
 
-  /* Soft blue gradient blends the right edge of the photo into the hero */
+  /* Subtle inner highlight + bottom blend into the hero gradient so the
+     photo edge fades naturally rather than reading as a hard card edge. */
   &::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      rgba(14, 42, 153, 0.0) 0%,
-      rgba(14, 42, 153, 0.15) 80%,
-      rgba(14, 42, 153, 0.45) 100%
-    );
+    background:
+      linear-gradient(180deg, rgba(14, 42, 153, 0) 60%, rgba(14, 42, 153, 0.55) 100%),
+      linear-gradient(90deg, rgba(14, 42, 153, 0.3) 0%, rgba(14, 42, 153, 0) 18%);
   }
 }
 
 /* Circular price bubble — floats over the hero photograph */
 .price-bubble {
   position: absolute;
-  top: clamp(16px, 4%, 32px);
-  right: clamp(16px, 4%, 32px);
+  top: clamp(20px, 5%, 36px);
+  right: clamp(20px, 5%, 36px);
   z-index: 2;
   display: grid;
   place-items: center;
-  width: clamp(128px, 14vw, 168px);
-  height: clamp(128px, 14vw, 168px);
+  width: clamp(140px, 15vw, 180px);
+  height: clamp(140px, 15vw, 180px);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.96);
   color: var(--color-text-primary);
-  border: 4px solid rgba(255, 255, 255, 0.98);
+  border: 6px solid rgba(255, 255, 255, 1);
   text-align: center;
-  padding: 14px;
+  padding: 16px;
   box-shadow:
-    0 24px 50px rgba(8, 22, 92, 0.4),
+    0 24px 50px rgba(8, 22, 92, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.65);
 
   small {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--color-text-secondary);
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-weight: 500;
+    margin-bottom: 2px;
   }
 
   strong {
-    font-size: clamp(1.75rem, 2.8vw, 2.25rem);
+    font-size: clamp(1.875rem, 2.8vw, 2.5rem);
     font-weight: 800;
     line-height: 1;
-    margin: 4px 0 2px;
     color: var(--color-text-primary);
     letter-spacing: -0.025em;
   }
 
   span {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--color-text-secondary);
     font-weight: 500;
-  }
-
-  em {
-    font-style: normal;
-    font-size: 0.625rem;
-    color: var(--color-text-muted);
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(15, 23, 42, 0.12);
-    width: 78%;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-weight: 600;
+    margin-top: 4px;
   }
 }
 
@@ -292,12 +286,12 @@
 
 .how-steps {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: var(--spacing-md);
   width: 100%;
 
-  @media (max-width: 1100px) {
-    grid-template-columns: 1.4fr 1fr 1fr;
+  @media (max-width: 1280px) {
+    grid-template-columns: 1.8fr 1fr 1fr;
   }
   @media (max-width: 880px) {
     grid-template-columns: 1fr;
@@ -309,7 +303,7 @@
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  min-height: 220px;
+  min-height: 240px;
   display: flex;
   border: 1px solid rgba(255, 255, 255, 0.18);
   transition: transform 0.2s ease;
@@ -319,35 +313,36 @@
 
 .how-card-num {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 12px;
+  left: 12px;
   z-index: 3;
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: #ffffff;
-  padding: 4px 8px;
+  padding: 3px 9px;
   border-radius: 6px;
-  background: rgba(8, 22, 92, 0.55);
+  background: rgba(8, 22, 92, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.22);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ----------- Featured (first) card with phone mockup ----------- */
 .how-card-featured {
   background:
-    radial-gradient(circle at 80% 20%, rgba(74, 102, 255, 0.55), transparent 55%),
+    radial-gradient(circle at 85% 15%, rgba(74, 102, 255, 0.55), transparent 55%),
     linear-gradient(150deg, #1633cc 0%, #1e40ff 70%, #4a66ff 100%);
-  padding: 18px;
-  align-items: center;
+  padding: 16px 16px 16px 18px;
+  align-items: stretch;
 }
 
 .how-card-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
   width: 100%;
-  margin-top: 24px;
+  margin-top: 28px;
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
@@ -355,9 +350,11 @@
 }
 
 .how-card-text {
+  min-width: 0;
+
   strong {
     display: block;
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
     line-height: 1.2;
     color: #ffffff;
     margin-bottom: 6px;
@@ -368,13 +365,13 @@
     margin: 0;
     font-size: 0.8125rem;
     line-height: 1.55;
-    color: rgba(255, 255, 255, 0.84);
+    color: rgba(255, 255, 255, 0.85);
   }
 }
 
 .how-card-art {
   position: relative;
-  width: 132px;
+  width: 122px;
   height: 200px;
   flex-shrink: 0;
 
