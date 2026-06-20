@@ -78,7 +78,7 @@
         </div>
         <div>
           <strong>Reliable &amp; insured</strong>
-          <p>Trusted professionals. Insured for your peace of mind.</p>
+          <p>Trusted professionals, fully insured for your peace of mind.</p>
         </div>
       </div>
     </div>
@@ -97,9 +97,20 @@
           <app-icon name="chevron-right" [size]="16" />
         </button>
 
-        <div class="how-steps">
+        <div
+          class="how-viewport"
+          aria-live="polite"
+          [attr.aria-label]="'Step ' + (activeStep() + 1) + ' of ' + totalSteps"
+        >
+          <div
+            class="how-steps"
+            [style.transform]="'translateX(-' + carouselOffset() + '%)'"
+          >
           <!-- Card 1 — featured: text-left + phone mockup right -->
-          <article class="how-card how-card-featured">
+          <article
+            class="how-card how-card-featured"
+            [class.how-card-active]="activeStep() === 0"
+          >
             <span class="how-card-num">01</span>
             <div class="how-card-body">
               <div class="how-card-text">
@@ -145,7 +156,10 @@
           </article>
 
           <!-- Card 2 — cleaning photo -->
-          <article class="how-card how-card-photo">
+          <article
+            class="how-card how-card-photo"
+            [class.how-card-active]="activeStep() === 1"
+          >
             <img
               class="how-card-bg"
               src="https://images.unsplash.com/photo-1754619880959-2b0528375883?w=600&h=600&fit=crop"
@@ -161,7 +175,10 @@
           </article>
 
           <!-- Card 3 — solar panel array with Before/After overlay -->
-          <article class="how-card how-card-photo how-card-ba">
+          <article
+            class="how-card how-card-photo how-card-ba"
+            [class.how-card-active]="activeStep() === 2"
+          >
             <img
               class="how-card-bg"
               src="https://images.unsplash.com/photo-1713544123580-12096cc9eb12?w=600&h=600&fit=crop"
@@ -179,6 +196,29 @@
               <p>Get before &amp; after photos and your estimated kWh gains after every clean.</p>
             </div>
           </article>
+
+          <!-- Card 4 — performance / ongoing care -->
+          <article
+            class="how-card how-card-featured how-card-performance"
+            [class.how-card-active]="activeStep() === 3"
+          >
+            <span class="how-card-num">04</span>
+            <div class="how-card-body">
+              <div class="how-card-text">
+                <strong>Enjoy ongoing care</strong>
+                <p>WhatsApp reminders, scheduled cleans, and reports — all from one simple portal.</p>
+              </div>
+              <div class="how-card-art how-card-art-stats" aria-hidden="true">
+                <div class="stat-card">
+                  <span class="stat-label">Next clean</span>
+                  <strong class="stat-value">24 May</strong>
+                  <span class="stat-hint">8 days to go</span>
+                  <div class="stat-bar"><span></span></div>
+                </div>
+              </div>
+            </div>
+          </article>
+          </div>
         </div>
 
         <button
@@ -237,7 +277,21 @@
       @if (loadingConfig()) {
         <p class="text-sm text-muted center">Loading…</p>
       } @else {
+        @if (googleClientId()) {
+          <div class="google-wrap">
+            <app-google-sign-in
+              [clientId]="googleClientId()!"
+              [disabled]="submitting()"
+              (credential)="onGoogleCredential($event)"
+              (loadError)="error.set($event)"
+            />
+          </div>
+        } @else if (!APP_CONFIG.mockMode && googleOnly()) {
+          <p class="form-error">Google Sign-In is not configured. Contact support.</p>
+        }
+
         @if (!googleOnly()) {
+          <div class="or-divider"><span>or</span></div>
           <form (ngSubmit)="onDemoSubmit()">
             <div class="form-group">
               <label class="form-label" for="email">Email</label>
@@ -268,22 +322,6 @@
             </button>
           </form>
         }
-
-        @if (googleClientId()) {
-          @if (!googleOnly()) {
-            <div class="or-divider"><span>or</span></div>
-          }
-          <div class="google-wrap">
-            <app-google-sign-in
-              [clientId]="googleClientId()!"
-              [disabled]="submitting()"
-              (credential)="onGoogleCredential($event)"
-              (loadError)="error.set($event)"
-            />
-          </div>
-        } @else if (!APP_CONFIG.mockMode && googleOnly()) {
-          <p class="form-error">Google Sign-In is not configured. Contact support.</p>
-        }
       }
 
       @if (error()) {
@@ -312,7 +350,7 @@
       </div>
 
       <p class="trust-note">
-        <span class="lock">🔒</span> Protected with encrypted Google sign-in
+        Protected with encrypted Google sign-in
       </p>
 
       <p class="legal-row">

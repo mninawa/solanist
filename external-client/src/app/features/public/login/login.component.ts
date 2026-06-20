@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService, googleLoginErrorMessage } from '../../../core/auth/auth.service';
@@ -40,9 +40,15 @@ export class LoginComponent implements OnInit {
   googleClientId = signal<string | null>(null);
   googleOnly = signal(false);
   allowSelfSignup = signal(false);
+
   readonly totalSteps = 4;
   activeStep = signal(0);
   readonly dotIndices = [0, 1, 2, 3];
+
+  /** Horizontal slide offset (% of carousel track width). */
+  readonly carouselOffset = computed(() =>
+    Math.min(this.activeStep() * 26, 78),
+  );
 
   setStep(idx: number): void {
     const t = this.totalSteps;
